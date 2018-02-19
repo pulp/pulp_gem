@@ -94,12 +94,12 @@ Sync repository ``foo`` using importer ``bar``
 
 ``$ http POST $IMPORTER_HREF'sync/' repository=$REPO_HREF``
 
-Upload ``foo.gem`` to Pulp
---------------------------
+Upload ``foo-0.0.1.gem`` to Pulp
+--------------------------------
 
 Create an Artifact by uploading the gemfile to Pulp.
 
-``$ http --form POST http://localhost:8000/api/v3/artifacts/ file@./foo.gem``
+``$ http --form POST http://localhost:8000/api/v3/artifacts/ file@./foo-0.0.1.gem``
 
 .. code:: json
 
@@ -107,6 +107,8 @@ Create an Artifact by uploading the gemfile to Pulp.
         "_href": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
         ...
     }
+
+You need to upload the corresponding ``foo-0.0.1.gemspec.rz`` in the same way.
 
 Create ``gem`` content from an Artifact
 ---------------------------------------
@@ -116,9 +118,12 @@ Create a file with the json below and save it as content.json.
 .. code:: json
 
     {
-      "digest": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
-      "path": "foo.gem",
-      "artifacts": {"foo.gem":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"}
+      "name": "foo",
+      "version": "0.0.1",
+      "artifacts": {
+        "gems/foo-0.0.1.gem":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
+      }
     }
 
 ``$ http POST http://localhost:8000/api/v3/content/gem/ < content.json``
@@ -128,12 +133,13 @@ Create a file with the json below and save it as content.json.
     {
         "_href": "http://localhost:8000/api/v3/content/gem/a9578a5f-c59f-4920-9497-8d1699c112ff/",
         "artifacts": {
-            "foo.gem": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/"
+            "gems/foo-0.0.1.gem":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+            "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
         },
-        "digest": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+        "name": "foo",
         "notes": {},
-        "path": "foo.gem",
-        "type": "gem"
+        "type": "gem",
+        "version": "0.0.1"
     }
 
-``$ export CONTENT_HREF=$(http :8000/api/v3/content/gem/ | jq -r '.results[] | select(.path == "foo.gem") | ._href')``
+``$ export CONTENT_HREF=$(http :8000/api/v3/content/gem/ | jq -r '.results[] | select(.name == "foo") | ._href')``
