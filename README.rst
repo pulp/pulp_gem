@@ -38,7 +38,7 @@ Install ``pulp-gem`` from source
 
 1)  sudo -u pulp -i
 2)  source ~/pulpvenv/bin/activate
-3)  git clone https://github.com/pulp/pulp\_gem.git
+3)  git clone https://github.com/ATIX-AG/pulp_gem
 4)  cd pulp\_gem
 5)  python setup.py develop
 6)  pulp-manager makemigrations pulp\_gem
