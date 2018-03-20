@@ -75,10 +75,10 @@ Create a repository ``foo``
 
 ``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
-Add an importer to repository ``foo``
--------------------------------------
+Add an importer
+---------------
 
-``$ http POST http://localhost:8000/api/v3/importers/gem/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST' repository=$REPO_HREF``
+``$ http POST http://localhost:8000/api/v3/importers/gem/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://rubygems.org/'``
 
 .. code:: json
 

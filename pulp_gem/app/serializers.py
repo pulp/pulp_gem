@@ -1,30 +1,34 @@
 from rest_framework import serializers
 
-from pulpcore.plugin.serializers import ContentSerializer, ImporterSerializer, PublisherSerializer
+from pulpcore.plugin.serializers import ContentSerializer, RemoteSerializer, PublisherSerializer
 
-from .models import GemContent, GemImporter, GemPublisher
+from .models import GemContent, GemRemote, GemPublisher
 
 
 class GemContentSerializer(ContentSerializer):
-    name = serializers.CharField()
-    version = serializers.CharField()
+    name = serializers.CharField(
+        help_text='Name of the gem'
+    )
+    version = serializers.CharField(
+        help_text='Version of the gem'
+    )
 
     class Meta:
         fields = ContentSerializer.Meta.fields + ('name', 'version')
         model = GemContent
 
 
-class GemImporterSerializer(ImporterSerializer):
+class GemRemoteSerializer(RemoteSerializer):
 
     sync_mode = serializers.ChoiceField(
-        help_text='How the importer should sync from the upstream repository.',
+        help_text='How the remote should sync from the upstream repository.',
         allow_blank=False,
-        choices=[GemImporter.ADDITIVE, GemImporter.MIRROR],
+        choices=[GemRemote.ADDITIVE, GemRemote.MIRROR],
     )
 
     class Meta:
-        fields = ImporterSerializer.Meta.fields
-        model = GemImporter
+        fields = RemoteSerializer.Meta.fields
+        model = GemRemote
 
 
 class GemPublisherSerializer(PublisherSerializer):

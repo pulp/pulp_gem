@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 
 requirements = [
     'pulpcore-plugin',
+    'rubymarshal',
 ]
 
 with open('README.rst') as f:
