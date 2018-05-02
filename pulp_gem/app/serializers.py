@@ -19,13 +19,6 @@ class GemContentSerializer(ContentSerializer):
 
 
 class GemRemoteSerializer(RemoteSerializer):
-
-    sync_mode = serializers.ChoiceField(
-        help_text='How the remote should sync from the upstream repository.',
-        allow_blank=False,
-        choices=[GemRemote.ADDITIVE, GemRemote.MIRROR],
-    )
-
     class Meta:
         fields = RemoteSerializer.Meta.fields
         model = GemRemote
