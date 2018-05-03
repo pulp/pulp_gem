@@ -2,7 +2,7 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, Importer, Publisher
+from pulpcore.plugin.models import Content, Remote, Publisher
 
 
 log = getLogger(__name__)
@@ -31,9 +31,9 @@ class GemContent(Content):
         )
 
 
-class GemImporter(Importer):
+class GemRemote(Remote):
     """
-    Importer for "gem" content.
+    Remote for "gem" content.
     """
     TYPE = 'gem'
 

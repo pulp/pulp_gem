@@ -64,30 +64,30 @@ Install ``pulp-gem`` From PyPI
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:8000/api/v3/repositories/ name=foo``
+``$ http POST http://localhost:8000/pulp/api/v3/repositories/ name=foo``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
+        "_href": "http://localhost:8000/pulp/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
         ...
     }
 
-``$ export REPO_HREF=$(http :8000/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
-Add an importer to repository ``foo``
--------------------------------------
+Add an importer
+---------------
 
-``$ http POST http://localhost:8000/api/v3/importers/gem/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://repos.fedorapeople.org/pulp/pulp/demo_repos/test_file_repo/PULP_MANIFEST' repository=$REPO_HREF``
+``$ http POST http://localhost:8000/pulp/api/v3/importers/gem/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://rubygems.org/'``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/importers/gem/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
+        "_href": "http://localhost:8000/pulp/api/v3/importers/gem/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
         ...
     }
 
-``$ export IMPORTER_HREF=$(http :8000/api/v3/importers/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export IMPORTER_HREF=$(http :8000/pulp/api/v3/importers/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
@@ -99,12 +99,12 @@ Upload ``foo-0.0.1.gem`` to Pulp
 
 Create an Artifact by uploading the gemfile to Pulp.
 
-``$ http --form POST http://localhost:8000/api/v3/artifacts/ file@./foo-0.0.1.gem``
+``$ http --form POST http://localhost:8000/pulp/api/v3/artifacts/ file@./foo-0.0.1.gem``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
         ...
     }
 
@@ -121,20 +121,20 @@ Create a file with the json below and save it as content.json.
       "name": "foo",
       "version": "0.0.1",
       "artifacts": {
-        "gems/foo-0.0.1.gem":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
-        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
+        "gems/foo-0.0.1.gem":"http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/pulp/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
       }
     }
 
-``$ http POST http://localhost:8000/api/v3/content/gem/ < content.json``
+``$ http POST http://localhost:8000/pulp/api/v3/content/gem/ < content.json``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/api/v3/content/gem/a9578a5f-c59f-4920-9497-8d1699c112ff/",
+        "_href": "http://localhost:8000/pulp/api/v3/content/gem/a9578a5f-c59f-4920-9497-8d1699c112ff/",
         "artifacts": {
-            "gems/foo-0.0.1.gem":"http://localhost:8000/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
-            "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
+            "gems/foo-0.0.1.gem":"http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+            "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/pulp/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
         },
         "name": "foo",
         "notes": {},
@@ -142,4 +142,4 @@ Create a file with the json below and save it as content.json.
         "version": "0.0.1"
     }
 
-``$ export CONTENT_HREF=$(http :8000/api/v3/content/gem/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/gem/ | jq -r '.results[] | select(.name == "foo") | ._href')``

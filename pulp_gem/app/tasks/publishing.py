@@ -1,0 +1,95 @@
+import logging
+import re
+import gzip
+import shutil
+
+from gettext import gettext as _
+from packaging import version
+
+from celery import shared_task
+from django.core.files import File
+
+from pulpcore.plugin.models import (
+    RepositoryVersion,
+    Publication,
+    PublishedArtifact,
+    PublishedMetadata,
+)
+from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+
+from pulp_gem.app.models import GemContent, GemPublisher
+from pulp_gem.specs import Specs, Key
+
+
+log = logging.getLogger(__name__)
+
+
+def publish_specs(specs, relative_path, publication):
+    with open(relative_path, 'wb') as fd:
+        specs.write(fd)
+    with open(relative_path, 'rb') as f_in:
+        with gzip.open(relative_path + '.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+    specs_metadata = PublishedMetadata(
+        relative_path=relative_path,
+        publication=publication,
+        file=File(open(relative_path, 'rb')))
+    specs_metadata.save()
+    specs_metadata_gz = PublishedMetadata(
+        relative_path=relative_path + '.gz',
+        publication=publication,
+        file=File(open(relative_path + '.gz', 'rb')))
+    specs_metadata_gz.save()
+
+
+@shared_task(base=UserFacingTask)
+def publish(publisher_pk, repository_version_pk):
+    """
+    Use provided publisher to create a Publication based on a RepositoryVersion.
+
+    Args:
+        publisher_pk (str): Use the publish settings provided by this publisher.
+        repository_version_pk (str): Create a Publication from this repository version.
+    """
+    publisher = GemPublisher.objects.get(pk=publisher_pk)
+    repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
+
+    log.info(
+        _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
+        {
+            'repository': repository_version.repository.name,
+            'version': repository_version.number,
+            'publisher': publisher.name,
+        })
+
+    with WorkingDirectory():
+        with Publication.create(repository_version, publisher) as publication:
+            specs = Specs()
+            latest_versions = {}
+            prerelease_specs = Specs()
+            for content in GemContent.objects.filter(
+                    pk__in=publication.repository_version.content).order_by('-created'):
+                for content_artifact in content.contentartifact_set.all():
+                    published_artifact = PublishedArtifact(
+                        relative_path=content_artifact.relative_path,
+                        publication=publication,
+                        content_artifact=content_artifact)
+                    published_artifact.save()
+                if re.fullmatch(r"[0-9.]*", content.version):
+                    specs.append(Key(content.name, content.version))
+                    old_ver = latest_versions.get(content.name)
+                    if old_ver is None or version.parse(old_ver) < version.parse(content.version):
+                        latest_versions[content.name] = content.version
+                else:
+                    prerelease_specs.append(Key(content.name, content.version))
+            latest_specs = Specs(Key(name, version) for name, version in latest_versions.items())
+
+            publish_specs(specs, 'specs.4.8', publication)
+            publish_specs(latest_specs, 'latest_specs.4.8', publication)
+            publish_specs(prerelease_specs, 'prerelease_specs.4.8', publication)
+
+    log.info(
+        _('Publication: %(publication)s created'),
+        {
+            'publication': publication.pk
+        })
