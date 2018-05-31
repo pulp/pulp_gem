@@ -12,7 +12,8 @@ class GemContent(Content):
     """
     The "gem" content type.
 
-    Content of this type represents a ruby gem file.
+    Content of this type represents a ruby gem file
+    with its spec data.
 
     Fields:
         name (str): The name of the gem.
