@@ -6,7 +6,6 @@ import shutil
 from gettext import gettext as _
 from packaging import version
 
-from celery import shared_task
 from django.core.files import File
 
 from pulpcore.plugin.models import (
@@ -15,7 +14,7 @@ from pulpcore.plugin.models import (
     PublishedArtifact,
     PublishedMetadata,
 )
-from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemPublisher
 from pulp_gem.specs import Specs, Key
@@ -42,14 +41,13 @@ def publish_specs(specs, relative_path, publication):
     specs_metadata_gz.save()
 
 
-@shared_task(base=UserFacingTask)
 def publish(publisher_pk, repository_version_pk):
     """
     Use provided publisher to create a Publication based on a RepositoryVersion.
 
     Args:
         publisher_pk (str): Use the publish settings provided by this publisher.
-        repository_version_pk (str): Create a Publication from this repository version.
+        repository_version_pk (str): Create a publication from this repository version.
     """
     publisher = GemPublisher.objects.get(pk=publisher_pk)
     repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)

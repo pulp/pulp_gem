@@ -1,28 +1,21 @@
 import logging
 import os
-import re
 import gzip
 
 from collections import namedtuple
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
-from packaging import version
 
-from celery import shared_task
-from django.core.files import File
 from django.db.models import Q
 
-from pulpcore.plugin.models import (
-    Artifact,
-    RepositoryVersion,
-    Repository)
+from pulpcore.plugin.models import Artifact, RepositoryVersion, Repository
 from pulpcore.plugin.changeset import (
     BatchIterator,
     ChangeSet,
     PendingArtifact,
     PendingContent,
     SizedIterable)
-from pulpcore.plugin.tasking import UserFacingTask, WorkingDirectory
+from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import Specs, Key
@@ -35,7 +28,6 @@ log = logging.getLogger(__name__)
 Delta = namedtuple('Delta', ('additions', 'removals'))
 
 
-@shared_task(base=UserFacingTask)
 def synchronize(remote_pk, repository_pk):
     """
     Create a new version of the repository that is synchronized with the remote
@@ -46,7 +38,7 @@ def synchronize(remote_pk, repository_pk):
         repository_pk (str): The repository PK.
 
     Raises:
-        ValueError: When feed_url is empty.
+        ValueError: When url is empty.
     """
     remote = GemRemote.objects.get(pk=remote_pk)
     repository = Repository.objects.get(pk=repository_pk)
@@ -87,7 +79,8 @@ def synchronize(remote_pk, repository_pk):
 
 def fetch_specs(remote):
     """
-    Fetch (download) the specs (specs.4.8.gz and [TODO] prerelease_specs.4.8.gz).
+    Fetch (download) the specs
+    (specs.4.8.gz and [TODO] prerelease_specs.4.8.gz).
     """
     parsed_url = urlparse(remote.url)
     root_dir = os.path.dirname(parsed_url.path)
@@ -120,11 +113,6 @@ def fetch_content(base_version):
 
 
 def find_delta(specs, content, mirror=True):
-    """
-    Using the specs and set of existing (natural) keys,
-    determine the set of content to be added and deleted from the
-    repository.  Expressed in natural key.
-    """
     """
     Find the content that needs to be added and removed.
 
@@ -169,7 +157,8 @@ def build_additions(remote, specs, delta):
             path = os.path.join(root_dir, relative_path)
             url = urlunparse(parsed_url._replace(path=path))
 
-            spec_relative_path = os.path.join('quick/Marshal.4.8', key.name + '-' + key.version + '.gemspec.rz')
+            spec_relative_path = os.path.join('quick/Marshal.4.8',
+                                              key.name + '-' + key.version + '.gemspec.rz')
             spec_path = os.path.join(root_dir, spec_relative_path)
             spec_url = urlunparse(parsed_url._replace(path=spec_path))
 
@@ -184,6 +173,7 @@ def build_additions(remote, specs, delta):
     parsed_url = urlparse(remote.url)
     root_dir = os.path.dirname(parsed_url.path)
     return SizedIterable(generate(), len(delta.additions))
+
 
 def build_removals(base_version, delta):
     """
@@ -201,7 +191,7 @@ def build_removals(base_version, delta):
             q = Q()
             for key in removals:
                 q |= Q(gemcontent__name=key.name, gemcontent__version=key.version)
-            q_set = self._base_version.content.filter(q)
+            q_set = base_version.content.filter(q)
             q_set = q_set.only('id')
             for gem in q_set:
                 yield gem
