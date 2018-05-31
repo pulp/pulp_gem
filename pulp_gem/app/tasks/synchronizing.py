@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 import gzip
 
 from collections import namedtuple
@@ -158,7 +157,8 @@ def build_additions(remote, specs, delta):
             path = os.path.join(root_dir, relative_path)
             url = urlunparse(parsed_url._replace(path=path))
 
-            spec_relative_path = os.path.join('quick/Marshal.4.8', key.name + '-' + key.version + '.gemspec.rz')
+            spec_relative_path = os.path.join('quick/Marshal.4.8',
+                                              key.name + '-' + key.version + '.gemspec.rz')
             spec_path = os.path.join(root_dir, spec_relative_path)
             spec_url = urlunparse(parsed_url._replace(path=spec_path))
 

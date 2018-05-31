@@ -8,6 +8,7 @@ from collections import namedtuple
 # Natural key.
 Key = namedtuple('Key', ('name', 'version'))
 
+
 class Specs(list):
     def read(self, fd):
         data = rubymarshal.reader.load(fd)

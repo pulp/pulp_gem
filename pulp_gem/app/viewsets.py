@@ -1,12 +1,10 @@
 from gettext import gettext as _
 
-from django.db import transaction
 from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
-from rest_framework import serializers, status
-from rest_framework.response import Response
+from rest_framework import serializers
 
-from pulpcore.plugin.models import Artifact, Repository, RepositoryVersion
+from pulpcore.plugin.models import Repository, RepositoryVersion
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
