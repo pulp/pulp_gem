@@ -4,7 +4,10 @@ from django_filters.rest_framework import filterset
 from rest_framework.decorators import detail_route
 from rest_framework import serializers
 
-from pulpcore.plugin.models import Repository, RepositoryVersion
+from pulpcore.plugin.serializers import (
+    RepositoryPublishURLSerializer,
+    RepositorySyncURLSerializer,
+)
 from pulpcore.plugin.tasking import enqueue_with_reservation
 from pulpcore.plugin.viewsets import (
     ContentViewSet,
@@ -12,7 +15,6 @@ from pulpcore.plugin.viewsets import (
     OperationPostponedResponse,
     PublisherViewSet,
 )
-from rest_framework_nested.relations import NestedHyperlinkedRelatedField
 
 from . import tasks
 from .models import GemContent, GemRemote, GemPublisher
@@ -28,62 +30,6 @@ class GemContentFilter(filterset.FilterSet):
         ]
 
 
-class _RepositorySyncURLSerializer(serializers.Serializer):
-    repository = serializers.HyperlinkedRelatedField(
-        required=True,
-        help_text=_('A URI of the repository to be synchronized.'),
-        queryset=Repository.objects.all(),
-        view_name='repositories-detail',
-        label=_('Repository'),
-        error_messages={
-            'required': _('The repository URI must be specified.')
-        })
-
-
-class _RepositoryPublishURLSerializer(serializers.Serializer):
-
-    repository = serializers.HyperlinkedRelatedField(
-        help_text=_('A URI of the repository to be synchronized.'),
-        required=False,
-        label=_('Repository'),
-        queryset=Repository.objects.all(),
-        view_name='repositories-detail',
-    )
-
-    repository_version = NestedHyperlinkedRelatedField(
-        help_text=_('A URI of the repository version to be published.'),
-        required=False,
-        label=_('Repository Version'),
-        queryset=RepositoryVersion.objects.all(),
-        view_name='versions-detail',
-        lookup_field='number',
-        parent_lookup_kwargs={'repository_pk': 'repository__pk'},
-    )
-
-    def validate(self, data):
-        repository = data.get('repository')
-        repository_version = data.get('repository_version')
-
-        if not repository and not repository_version:
-            raise serializers.ValidationError(
-                _("Either the 'repository' or 'repository_version' need to be specified"))
-        elif not repository and repository_version:
-            return data
-        elif repository and not repository_version:
-            version = RepositoryVersion.latest(repository)
-            if version:
-                new_data = {'repository_version': version}
-                new_data.update(data)
-                return new_data
-            else:
-                raise serializers.ValidationError(
-                    detail=_('Repository has no version available to publish'))
-        raise serializers.ValidationError(
-            _("Either the 'repository' or 'repository_version' need to be specified "
-              "but not both.")
-        )
-
-
 class GemContentViewSet(ContentViewSet):
     endpoint_name = 'gem/gems'
     queryset = GemContent.objects.all()
@@ -96,13 +42,13 @@ class GemRemoteViewSet(RemoteViewSet):
     queryset = GemRemote.objects.all()
     serializer_class = GemRemoteSerializer
 
-    @detail_route(methods=('post',), serializer_class=_RepositorySyncURLSerializer)
+    @detail_route(methods=('post',), serializer_class=RepositorySyncURLSerializer)
     def sync(self, request, pk):
         """
         Synchronizes a repository. The ``repository`` field has to be provided.
         """
         remote = self.get_object()
-        serializer = _RepositorySyncURLSerializer(data=request.data, context={'request': request})
+        serializer = RepositorySyncURLSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         repository = serializer.validated_data.get('repository')
         result = enqueue_with_reservation(
@@ -121,15 +67,15 @@ class GemPublisherViewSet(PublisherViewSet):
     queryset = GemPublisher.objects.all()
     serializer_class = GemPublisherSerializer
 
-    @detail_route(methods=('post',), serializer_class=_RepositoryPublishURLSerializer)
+    @detail_route(methods=('post',), serializer_class=RepositoryPublishURLSerializer)
     def publish(self, request, pk):
         """
         Publishes a repository. Either the ``repository`` or the ``repository_version`` fields can
         be provided but not both at the same time.
         """
         publisher = self.get_object()
-        serializer = _RepositoryPublishURLSerializer(data=request.data,
-                                                     context={'request': request})
+        serializer = RepositoryPublishURLSerializer(data=request.data,
+                                                    context={'request': request})
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get('repository_version')
 
