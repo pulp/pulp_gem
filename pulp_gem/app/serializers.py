@@ -14,7 +14,7 @@ class GemContentSerializer(ContentSerializer):
     )
 
     class Meta:
-        fields = ('_href', 'type', 'name', 'version')
+        fields = ContentSerializer.Meta.fields + ('name', 'version')
         model = GemContent
 
 
