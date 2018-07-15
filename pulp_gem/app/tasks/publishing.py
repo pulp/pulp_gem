@@ -49,6 +49,7 @@ def publish(publisher_pk, repository_version_pk):
         publisher_pk (str): Use the publish settings provided by this publisher.
         repository_version_pk (str): Create a publication from this repository version.
     """
+
     publisher = GemPublisher.objects.get(pk=publisher_pk)
     repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 

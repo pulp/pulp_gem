@@ -20,6 +20,7 @@ class GemContent(Content):
         version (str): The version of the gem.
 
     """
+
     TYPE = 'gem'
 
     name = models.TextField(blank=False, null=False)
@@ -36,6 +37,7 @@ class GemRemote(Remote):
     """
     Remote for "gem" content.
     """
+
     TYPE = 'gem'
 
 
@@ -43,4 +45,5 @@ class GemPublisher(Publisher):
     """
     Publisher for "gem" content.
     """
+
     TYPE = 'gem'

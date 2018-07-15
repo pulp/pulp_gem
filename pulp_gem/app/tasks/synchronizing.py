@@ -1,34 +1,24 @@
 import logging
 import os
-import gzip
 
-from collections import namedtuple
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from django.db.models import Q
+from pulpcore.plugin.models import Artifact, ProgressBar, Repository
+from pulpcore.plugin.stages import (
+    DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, Stage
+)
 
-from pulpcore.plugin.models import Artifact, RepositoryVersion, Repository
-from pulpcore.plugin.changeset import (
-    BatchIterator,
-    ChangeSet,
-    PendingArtifact,
-    PendingContent,
-    SizedIterable)
 from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemRemote
-from pulp_gem.specs import Specs, Key
+from pulp_gem.specs import Specs
 
 
 log = logging.getLogger(__name__)
 
 
-# The set of Key to be added and removed.
-Delta = namedtuple('Delta', ('additions', 'removals'))
-
-
-def synchronize(remote_pk, repository_pk):
+def synchronize(remote_pk, repository_pk, mirror):
     """
     Create a new version of the repository that is synchronized with the remote
     as specified by the remote.
@@ -36,163 +26,70 @@ def synchronize(remote_pk, repository_pk):
     Args:
         remote_pk (str): The remote PK.
         repository_pk (str): The repository PK.
+        mirror (bool): True for mirror mode, False for additive.
 
     Raises:
-        ValueError: When url is empty.
+        ValueError: If the remote does not specify a URL to sync.
+
     """
     remote = GemRemote.objects.get(pk=remote_pk)
     repository = Repository.objects.get(pk=repository_pk)
-    base_version = RepositoryVersion.latest(repository)
 
     if not remote.url:
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
-    with WorkingDirectory():
-        with RepositoryVersion.create(repository) as new_version:
-            log.info(
-                _('Synchronizing: repository=%(r)s remote=%(p)s'),
-                {
-                    'r': repository.name,
-                    'p': remote.name
-                })
-            specs = fetch_specs(remote)
-            content = fetch_content(base_version)
-            delta = find_delta(specs, content)
-            additions = build_additions(remote, specs, delta)
-            removals = build_removals(base_version, delta)
-            changeset = ChangeSet(
-                remote=remote,
-                repository_version=new_version,
-                additions=additions,
-                removals=removals)
-            for report in changeset.apply():
-                if not log.isEnabledFor(logging.DEBUG):
-                    continue
-                log.debug(
-                    _('Applied: repository=%(r)s remote=%(p)s change:%(c)s'),
-                    {
-                        'r': repository.name,
-                        'p': remote.name,
-                        'c': report,
-                    })
+    first_stage = GemFirstStage(remote)
+    DeclarativeVersion(first_stage, repository, mirror).create()
 
 
-def fetch_specs(remote):
+class GemFirstStage(Stage):
     """
-    Fetch (download) the specs
-    (specs.4.8.gz and [TODO] prerelease_specs.4.8.gz).
+    The first stage of a pulp_gem sync pipeline.
     """
-    parsed_url = urlparse(remote.url)
-    root_dir = os.path.dirname(parsed_url.path)
 
-    specs_path = os.path.join(root_dir, 'specs.4.8.gz')
-    downloader = remote.get_downloader(urlunparse(parsed_url._replace(path=specs_path)))
-    downloader.fetch()
-    specs = Specs()
-    with gzip.open(downloader.path, 'rb') as fd:
-        specs.read(fd)
-    return specs
+    def __init__(self, remote):
+        """
+        The first stage of a pulp_gem sync pipeline.
 
+        Args:
+            remote (GemRemote): The remote data to be used when syncing
 
-def fetch_content(base_version):
-    """
-    Fetch the GemContent contained in the (base) repository version.
+        """
+        self.remote = remote
 
-    Args:
-        base_version (RepositoryVersion): A repository version.
+    async def __call__(self, in_q, out_q):
+        """
+        Build and emit `DeclarativeContent` from the Spec data.
 
-    Returns:
-        set: A set of Key contained in the (base) repository version.
-    """
-    content = set()
-    if base_version:
-        for gem in GemContent.objects.filter(pk__in=base_version.content):
-            key = Key(name=gem.name, version=gem.version)
-            content.add(key)
-    return content
+        Args:
+            in_q (asyncio.Queue): Unused because the first stage doesn't read from an input queue.
+            out_q (asyncio.Queue): The out_q to send `DeclarativeContent` objects to
 
+        """
+        with ProgressBar(message='Downloading Metadata') as pb:
+            parsed_url = urlparse(self.remote.url)
+            root_dir = parsed_url.path
+            specs_path = os.path.join(root_dir, 'specs.4.8.gz')
+            specs_url = urlunparse(parsed_url._replace(path=specs_path))
+            downloader = self.remote.get_downloader(specs_url)
+            result = await downloader.run()
+            pb.increment()
 
-def find_delta(specs, content, mirror=True):
-    """
-    Find the content that needs to be added and removed.
+        with ProgressBar(message='Parsing Metadata') as pb:
+            specs = Specs(result.path)
+            for key in specs.read():
+                relative_path = os.path.join('gems', key.name + '-' + key.version + '.gem')
+                path = os.path.join(root_dir, relative_path)
+                url = urlunparse(parsed_url._replace(path=path))
 
-    Args:
-        specs (Specs): The downloaded specs.
-        content: (set): The set of natural keys for content contained in the (base)
-            repository version.
-        mirror (bool): The delta should include changes needed to ensure the content
-            contained within the pulp repository is exactly the same as the
-            content contained within the remote repository.
-
-    Returns:
-        Delta: The set of Key to be added and removed.
-    """
-    remote_content = set(
-        [
-            Key(name=e.name, version=e.version) for e in specs
-        ])
-    additions = (remote_content - content)
-    if mirror:
-        removals = (content - remote_content)
-    else:
-        removals = set()
-    return Delta(additions, removals)
-
-
-def build_additions(remote, specs, delta):
-    """
-    Build the content to be added.
-
-    Args:
-        remote (FileRemote): A remote.
-        specs (Specs): The downloaded specs.
-        delta (Delta): The set of Key to be added and removed.
-
-    Returns:
-        SizedIterable: The PendingContent to be added to the repository.
-    """
-    def generate():
-        for key in delta.additions:
-            relative_path = os.path.join('gems', key.name + '-' + key.version + '.gem')
-            path = os.path.join(root_dir, relative_path)
-            url = urlunparse(parsed_url._replace(path=path))
-
-            spec_relative_path = os.path.join('quick/Marshal.4.8',
+                spec_relative_path = os.path.join('quick/Marshal.4.8',
                                               key.name + '-' + key.version + '.gemspec.rz')
-            spec_path = os.path.join(root_dir, spec_relative_path)
-            spec_url = urlunparse(parsed_url._replace(path=spec_path))
-
-            gem = GemContent(name=key.name, version=key.version)
-            content = PendingContent(
-                gem,
-                artifacts={
-                    PendingArtifact(Artifact(), url, relative_path),
-                    PendingArtifact(Artifact(), spec_url, spec_relative_path),
-                })
-            yield content
-    parsed_url = urlparse(remote.url)
-    root_dir = os.path.dirname(parsed_url.path)
-    return SizedIterable(generate(), len(delta.additions))
-
-
-def build_removals(base_version, delta):
-    """
-    Build the content to be removed.
-
-    Args:
-        base_version (RepositoryVersion):  The base repository version.
-        delta (Delta): The set of Key to be added and removed.
-
-    Returns:
-        SizedIterable: The FileContent to be removed from the repository.
-    """
-    def generate():
-        for removals in BatchIterator(delta.removals):
-            q = Q()
-            for key in removals:
-                q |= Q(gemcontent__name=key.name, gemcontent__version=key.version)
-            q_set = base_version.content.filter(q)
-            q_set = q_set.only('id')
-            for gem in q_set:
-                yield gem
-    return SizedIterable(generate(), len(delta.removals))
+                spec_path = os.path.join(root_dir, spec_relative_path)
+                spec_url = urlunparse(parsed_url._replace(path=spec_path))
+                gem = GemContent(name=key.name, version=key.version)
+                da_gem = DeclarativeArtifact(Artifact(), url, relative_path, self.remote)
+                da_spec = DeclarativeArtifact(Artifact(), spec_url, spec_relative_path, self.remote)
+                dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_spec])
+                pb.increment()
+                await out_q.put(dc)
+        await out_q.put(None)
