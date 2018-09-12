@@ -64,12 +64,12 @@ Install ``pulp-gem`` From PyPI
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/repositories/ name=foo``
+``$ http POST :8000/pulp/api/v3/repositories/ name=foo``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/repositories/8d7cd67a-9421-461f-9106-2df8e4854f5f/",
+        "_href": "/pulp/api/v3/repositories/1/",
         ...
     }
 
@@ -78,33 +78,33 @@ Create a repository ``foo``
 Add an importer
 ---------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/importers/gem/ name='bar' download_policy='immediate' sync_mode='mirror' feed_url='https://rubygems.org/'``
+``$ http POST :8000/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/'``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/importers/gem/13ac2d63-7b7b-401d-b71b-9a5af05aab3c/",
+        "_href": "/pulp/api/v3/remotes/gem/1/",
         ...
     }
 
-``$ export IMPORTER_HREF=$(http :8000/pulp/api/v3/importers/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using importer ``bar``
 ----------------------------------------------
 
-``$ http POST $IMPORTER_HREF'sync/' repository=$REPO_HREF``
+``$ http POST :8000$REMOTE_HREF'sync/' repository=$REPO_HREF``
 
 Upload ``foo-0.0.1.gem`` to Pulp
 --------------------------------
 
 Create an Artifact by uploading the gemfile to Pulp.
 
-``$ http --form POST http://localhost:8000/pulp/api/v3/artifacts/ file@./foo-0.0.1.gem``
+``$ http --form POST :8000/pulp/api/v3/artifacts/ file@./foo-0.0.1.gem``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
+        "_href": "/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
         ...
     }
 
@@ -121,20 +121,20 @@ Create a file with the json below and save it as content.json.
       "name": "foo",
       "version": "0.0.1",
       "artifacts": {
-        "gems/foo-0.0.1.gem":"http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
-        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/pulp/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
+        "gems/foo-0.0.1.gem": "/pulp/api/v3/artifacts/1/",
+        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz": "/pulp/api/v3/artifacts/2/"
       }
     }
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/gem/ < content.json``
+``$ http POST :8000/pulp/api/v3/content/gem/ < content.json``
 
 .. code:: json
 
     {
-        "_href": "http://localhost:8000/pulp/api/v3/content/gem/a9578a5f-c59f-4920-9497-8d1699c112ff/",
+        "_href": "http://localhost:8000/pulp/api/v3/content/gem/3/",
         "artifacts": {
-            "gems/foo-0.0.1.gem":"http://localhost:8000/pulp/api/v3/artifacts/7d39e3f6-535a-4b6e-81e9-c83aa56aa19e/",
-            "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/pulp/api/v3/artifacts/f8311baf-4f92-4625-8428-c38a1690527c/"
+            "gems/foo-0.0.1.gem": "/pulp/api/v3/artifacts/1/",
+            "quick/Marshal.4.8/foo-0.0.1.gemspec.rz": "/pulp/api/v3/artifacts/2/"
         },
         "name": "foo",
         "notes": {},
