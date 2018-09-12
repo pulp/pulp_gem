@@ -75,10 +75,10 @@ Create a repository ``foo``
 
 ``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
-Add an importer
----------------
+Add a remote
+------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/gem/ name='bar' feed_url='https://rubygems.org/'``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/'``
 
 .. code:: json
 
@@ -89,10 +89,10 @@ Add an importer
 
 ``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
-Sync repository ``foo`` using importer ``bar``
-----------------------------------------------
+Sync repository ``foo`` using remote ``bar``
+--------------------------------------------
 
-``$ http POST ':8000${REMOTE_HREF}sync/' repository=$REPO_HREF``
+``$ http POST ':8000'${REMOTE_HREF}'sync/' repository=$REPO_HREF``
 
 Upload ``foo-0.0.1.gem`` to Pulp
 --------------------------------
