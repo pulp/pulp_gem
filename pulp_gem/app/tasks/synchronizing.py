@@ -1,12 +1,24 @@
+import asyncio
 import logging
 import os
 
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressBar, Repository
+from pulpcore.plugin.models import Artifact, ProgressBar, Repository, RepositoryVersion
 from pulpcore.plugin.stages import (
-    DeclarativeArtifact, DeclarativeContent, DeclarativeVersion, Stage
+    DeclarativeArtifact,
+    DeclarativeContent,
+    DeclarativeVersion,
+    Stage,
+    ArtifactDownloader,
+    ArtifactSaver,
+    QueryExistingContentUnits,
+    ContentUnitSaver,
+    ContentUnitAssociation,
+    ContentUnitUnassociation,
+    EndStage,
+    create_pipeline,
 )
 
 from pulpcore.plugin.tasking import WorkingDirectory
@@ -16,6 +28,85 @@ from pulp_gem.specs import Specs
 
 
 log = logging.getLogger(__name__)
+
+
+async def batches(in_q):
+    """
+    Asynchronous iterator yielding batches of :class:`DeclarativeContent` from `in_q`.
+
+    Args:
+        in_q (:class:`asyncio.Queue`): The queue to receive
+            :class:`~pulpcore.plugin.stages.DeclarativeContent` objects from.
+
+    Yields:
+        A list of :class:`DeclarativeContent` instances
+
+    Examples:
+        Used in stages to get large chunks of declarative_content instances from the
+        `in_q`::
+
+            async for batch in self.batches(in_q):
+                # process the batch and queue the result to out_q
+            await out_q.put(None) # stage is finished
+    """
+    shutdown = False
+
+    while not shutdown:
+        batch = []
+        content = await in_q.get()
+        if content is None:
+            shutdown = True
+        else:
+            batch.append(content)
+        try:
+            while not shutdown:
+                content = in_q.get_nowait()
+                if content is None:
+                    shutdown = True
+                else:
+                    batch.append(content)
+        except asyncio.QueueEmpty:
+            pass
+        if batch:
+            yield batch
+
+
+async def greedy_put(out_q, batch):
+    """queue.put() that only reschedules when queue is full"""
+    for content in batch:
+        try:
+            out_q.put_nowait(content)
+        except asyncio.QueueFull:
+            await out_q.put(content)
+
+
+class ExistingContentNeedsNoArtifacts(Stage):
+    """
+    A Stages API stage that removes all
+    :class:`~pulpcore.plugin.stages.DeclarativeArtifact` instances from
+    :class:`~pulpcore.plugin.stages.DeclarativeContent` units if the respective
+    :class:`~pulpcore.plugin.models.Content` is already existing.
+    """
+
+    async def __call__(self, in_q, out_q):
+        """
+        The coroutine for this stage.
+
+        Args:
+            in_q (:class:`asyncio.Queue`): The queue to receive
+                :class:`~pulpcore.plugin.stages.DeclarativeContent` objects from.
+            out_q (:class:`asyncio.Queue`): The queue to put
+                :class:`~pulpcore.plugin.stages.DeclarativeContent` into.
+
+        Returns:
+            The coroutine for this stage.
+        """
+        async for batch in batches(in_q):
+            for declarative_content in batch:
+                if declarative_content.content.pk is not None:
+                    declarative_content.d_artifacts = []
+            await greedy_put(out_q, batch)
+        await out_q.put(None)
 
 
 def synchronize(remote_pk, repository_pk, mirror):
@@ -39,7 +130,7 @@ def synchronize(remote_pk, repository_pk, mirror):
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
     first_stage = GemFirstStage(remote)
-    DeclarativeVersion(first_stage, repository, mirror).create()
+    GemDeclarativeVersion(first_stage, repository, mirror).create()
 
 
 class GemFirstStage(Stage):
@@ -93,3 +184,28 @@ class GemFirstStage(Stage):
                 pb.increment()
                 await out_q.put(dc)
         await out_q.put(None)
+
+
+class GemDeclarativeVersion(DeclarativeVersion):
+
+    def create(self):
+        """
+        Perform the work. This is the long-blocking call where all syncing occurs.
+        """
+        with WorkingDirectory():
+            with RepositoryVersion.create(self.repository) as new_version:
+                loop = asyncio.get_event_loop()
+                stages = [
+                    self.first_stage,
+                    QueryExistingContentUnits(),
+                    ExistingContentNeedsNoArtifacts(),
+                    ArtifactDownloader(),
+                    ArtifactSaver(),
+                    ContentUnitSaver(),
+                    ContentUnitAssociation(new_version)
+                ]
+                if self.mirror:
+                    stages.append(ContentUnitUnassociation(new_version))
+                stages.append(EndStage())
+                pipeline = create_pipeline(stages)
+                loop.run_until_complete(pipeline)
