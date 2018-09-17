@@ -17,15 +17,14 @@ from pulpcore.plugin.models import (
 from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemPublisher
-from pulp_gem.specs import Specs, Key
+from pulp_gem.specs import write_specs, Key
 
 
 log = logging.getLogger(__name__)
 
 
 def publish_specs(specs, relative_path, publication):
-    with open(relative_path, 'wb') as fd:
-        specs.write(fd)
+    write_specs(specs, relative_path)
     with open(relative_path, 'rb') as f_in:
         with gzip.open(relative_path + '.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -63,9 +62,9 @@ def publish(publisher_pk, repository_version_pk):
 
     with WorkingDirectory():
         with Publication.create(repository_version, publisher) as publication:
-            specs = Specs()
+            specs = []
             latest_versions = {}
-            prerelease_specs = Specs()
+            prerelease_specs = []
             for content in GemContent.objects.filter(
                     pk__in=publication.repository_version.content).order_by('-created'):
                 for content_artifact in content.contentartifact_set.all():
@@ -81,7 +80,7 @@ def publish(publisher_pk, repository_version_pk):
                         latest_versions[content.name] = content.version
                 else:
                     prerelease_specs.append(Key(content.name, content.version))
-            latest_specs = Specs(Key(name, version) for name, version in latest_versions.items())
+            latest_specs = [Key(name, version) for name, version in latest_versions.items()]
 
             publish_specs(specs, 'specs.4.8', publication)
             publish_specs(latest_specs, 'latest_specs.4.8', publication)

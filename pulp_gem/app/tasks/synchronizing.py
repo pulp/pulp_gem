@@ -24,7 +24,7 @@ from pulpcore.plugin.stages import (
 from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemRemote
-from pulp_gem.specs import Specs
+from pulp_gem.specs import read_specs
 
 
 log = logging.getLogger(__name__)
@@ -167,8 +167,7 @@ class GemFirstStage(Stage):
             pb.increment()
 
         with ProgressBar(message='Parsing Metadata') as pb:
-            specs = Specs(result.path)
-            for key in specs.read():
+            for key in read_specs(result.path):
                 relative_path = os.path.join('gems', key.name + '-' + key.version + '.gem')
                 path = os.path.join(root_dir, relative_path)
                 url = urlunparse(parsed_url._replace(path=path))
