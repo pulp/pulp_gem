@@ -1,10 +1,6 @@
-from gettext import gettext as _
-
 from django_filters.rest_framework import filterset
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import detail_route
-from rest_framework import serializers, status
-from rest_framework.response import Response
 
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,

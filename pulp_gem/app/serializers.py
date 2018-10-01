@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from pulpcore.plugin.serializers import ContentSerializer, RelatedField, RemoteSerializer, \
+from pulpcore.plugin.serializers import ContentSerializer, RemoteSerializer, \
     PublisherSerializer
 
 from .models import GemContent, GemRemote, GemPublisher
@@ -8,7 +8,7 @@ from .models import GemContent, GemRemote, GemPublisher
 
 class GemContentSerializer(ContentSerializer):
     """
-    Serializer for Gem Content
+    Serializer for Gem Content.
     """
 
     name = serializers.CharField(

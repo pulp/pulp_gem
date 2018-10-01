@@ -12,6 +12,9 @@ Key = namedtuple('Key', ('name', 'version'))
 
 
 def read_specs(relative_path):
+    """
+    Read rubygem specs from file.
+    """
     # read compressed version
     with gzip.open(relative_path, 'rb') as fd:
         data = rubymarshal.reader.load(fd)
@@ -26,6 +29,9 @@ def read_specs(relative_path):
 
 
 def write_specs(keys, relative_path):
+    """
+    Write rubygem specs to file.
+    """
     specs = [[e.name, rubymarshal.classes.UsrMarshal('Gem::Version', [e.version]), 'ruby']
              for e in keys]
     # write uncompressed version

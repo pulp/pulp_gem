@@ -23,7 +23,7 @@ from pulp_gem.specs import write_specs, Key
 log = logging.getLogger(__name__)
 
 
-def publish_specs(specs, relative_path, publication):
+def _publish_specs(specs, relative_path, publication):
     write_specs(specs, relative_path)
     with open(relative_path, 'rb') as f_in:
         with gzip.open(relative_path + '.gz', 'wb') as f_out:
@@ -48,7 +48,6 @@ def publish(publisher_pk, repository_version_pk):
         publisher_pk (str): Use the publish settings provided by this publisher.
         repository_version_pk (str): Create a publication from this repository version.
     """
-
     publisher = GemPublisher.objects.get(pk=publisher_pk)
     repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
@@ -82,9 +81,9 @@ def publish(publisher_pk, repository_version_pk):
                     prerelease_specs.append(Key(content.name, content.version))
             latest_specs = [Key(name, version) for name, version in latest_versions.items()]
 
-            publish_specs(specs, 'specs.4.8', publication)
-            publish_specs(latest_specs, 'latest_specs.4.8', publication)
-            publish_specs(prerelease_specs, 'prerelease_specs.4.8', publication)
+            _publish_specs(specs, 'specs.4.8', publication)
+            _publish_specs(latest_specs, 'latest_specs.4.8', publication)
+            _publish_specs(prerelease_specs, 'prerelease_specs.4.8', publication)
 
     log.info(
         _('Publication: %(publication)s created'),
