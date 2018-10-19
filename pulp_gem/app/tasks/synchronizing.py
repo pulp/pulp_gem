@@ -48,6 +48,7 @@ async def batches(in_q):
             async for batch in self.batches(in_q):
                 # process the batch and queue the result to out_q
             await out_q.put(None) # stage is finished
+
     """
     shutdown = False
 
@@ -72,7 +73,9 @@ async def batches(in_q):
 
 
 async def greedy_put(out_q, batch):
-    """queue.put() that only reschedules when queue is full"""
+    """
+    queue.put() that only reschedules when queue is full.
+    """
     for content in batch:
         try:
             out_q.put_nowait(content)
@@ -82,6 +85,8 @@ async def greedy_put(out_q, batch):
 
 class ExistingContentNeedsNoArtifacts(Stage):
     """
+    Stage to remove declarative_artifacts from existing content.
+
     A Stages API stage that removes all
     :class:`~pulpcore.plugin.stages.DeclarativeArtifact` instances from
     :class:`~pulpcore.plugin.stages.DeclarativeContent` units if the respective
@@ -100,6 +105,7 @@ class ExistingContentNeedsNoArtifacts(Stage):
 
         Returns:
             The coroutine for this stage.
+
         """
         async for batch in batches(in_q):
             for declarative_content in batch:
@@ -111,8 +117,7 @@ class ExistingContentNeedsNoArtifacts(Stage):
 
 def synchronize(remote_pk, repository_pk, mirror):
     """
-    Create a new version of the repository that is synchronized with the remote
-    as specified by the remote.
+    Create a new version of the repository that is synchronized with the remote as specified.
 
     Args:
         remote_pk (str): The remote PK.
@@ -173,7 +178,7 @@ class GemFirstStage(Stage):
                 url = urlunparse(parsed_url._replace(path=path))
 
                 spec_relative_path = os.path.join('quick/Marshal.4.8',
-                                              key.name + '-' + key.version + '.gemspec.rz')
+                                                  key.name + '-' + key.version + '.gemspec.rz')
                 spec_path = os.path.join(root_dir, spec_relative_path)
                 spec_url = urlunparse(parsed_url._replace(path=spec_path))
                 gem = GemContent(name=key.name, version=key.version)
@@ -186,6 +191,11 @@ class GemFirstStage(Stage):
 
 
 class GemDeclarativeVersion(DeclarativeVersion):
+    """
+    Custom implementation of Declarative version.
+
+    This should go away with the new plugin api.
+    """
 
     def create(self):
         """
