@@ -1,5 +1,8 @@
+.. image:: https://travis-ci.org/ATIX-AG/pulp_gem.svg?branch=master
+    :target: https://travis-ci.org/ATIX-AG/pulp_gem
+
 ``pulp_gem`` Plugin
-=======================
+===================
 
 This is the ``pulp_gem`` Plugin for `Pulp Project
 3.0+ <https://pypi.python.org/pypi/pulpcore/>`__. This plugin adds importers and distributors
@@ -34,7 +37,7 @@ instructions <https://docs.pulpproject.org/en/3.0/nightly/installation/instructi
 provided with pulpcore.
 
 Install ``pulp-gem`` from source
----------------------------------
+--------------------------------
 
 1)  sudo -u pulp -i
 2)  source ~/pulpvenv/bin/activate
@@ -49,7 +52,7 @@ Install ``pulp-gem`` from source
 11) sudo systemctl restart pulp\_worker@2
 
 Install ``pulp-gem`` From PyPI
--------------------------------
+------------------------------
 
 1) sudo -u pulp -i
 2) source ~/pulpvenv/bin/activate
