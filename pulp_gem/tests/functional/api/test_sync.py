@@ -20,7 +20,6 @@ from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa
 
 
 # Implement sync support before enabling this test.
-@unittest.skip("FIXME: plugin writer action required")
 class BasicSyncTestCase(unittest.TestCase):
     """Sync repositories with the gem plugin."""
 

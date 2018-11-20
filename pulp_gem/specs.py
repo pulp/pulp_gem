@@ -1,4 +1,4 @@
-import gzip
+from gzip import GzipFile
 
 import rubymarshal.classes
 import rubymarshal.writer
@@ -15,9 +15,12 @@ def read_specs(relative_path):
     """
     Read rubygem specs from file.
     """
-    # read compressed version
-    with gzip.open(relative_path, 'rb') as fd:
-        data = rubymarshal.reader.load(fd)
+    try:
+        with GzipFile(relative_path, 'rb') as fd:
+            data = rubymarshal.reader.load(fd)
+    except OSError:
+        with open(relative_path, 'rb') as fd:
+            data = rubymarshal.reader.load(fd)
     for item in data:
         name = item[0]
         if name.__class__ is bytes:

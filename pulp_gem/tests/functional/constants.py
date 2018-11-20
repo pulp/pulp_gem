@@ -17,7 +17,8 @@ GEM_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'gem/')
 
 
 # FIXME: replace this with your own fixture repository URL and metadata
-GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'gem/')
+# GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'gem/')
+GEM_FIXTURE_URL = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/gems/repo/'
 
 # FIXME: replace this with the actual number of content units in your test fixture
 GEM_FIXTURE_COUNT = 3
