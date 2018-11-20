@@ -1,12 +1,20 @@
-#!/usr/bin/env sh
-set -v
+#!/usr/bin/env bash
+set -veuo pipefail
 
-export COMMIT_MSG=$(git show HEAD^2 -s)
-export PULP_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp\/pull\/(\d+)' | awk -F'/' '{print $7}')
+if [ "$TRAVIS_PULL_REQUEST" = "false" ]
+then
+  PULP_PR_NUMBER=
+else
+  PR_MSG=$(http --json "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/pulls/${TRAVIS_PULL_REQUEST}" | jq -r .body)
+  PULP_PR_NUMBER=$(echo $PR_MSG | sed -n 's/.*pulp\/pulp#\([0-9]*\)/\1/p')
+fi
+
+
 
 pip install -r test_requirements.txt
 
-cd .. && git clone https://github.com/pulp/pulp.git
+pushd ..
+git clone https://github.com/pulp/pulp.git
 
 if [ -n "$PULP_PR_NUMBER" ]; then
   pushd pulp
@@ -18,5 +26,5 @@ fi
 pushd pulp/pulpcore/ && pip install -e . && popd
 pushd pulp/plugin/ && pip install -e .  && popd
 
-cd pulp_gem
+popd
 pip install -e .
