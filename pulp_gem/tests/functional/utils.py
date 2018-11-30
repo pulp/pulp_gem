@@ -36,7 +36,6 @@ def gen_gem_remote(**kwargs):
     :param url: The URL of an external content source.
     """
     remote = gen_remote(GEM_FIXTURE_URL)
-    # FIXME: Add any fields specific to a gem remote here
     gem_extra_fields = {
         **kwargs
     }
@@ -50,7 +49,6 @@ def gen_gem_publisher(**kwargs):
     :param url: The URL of an external content source.
     """
     publisher = gen_publisher()
-    # FIXME: Add any fields specific to a gem publisher here
     gem_extra_fields = {
         **kwargs
     }
@@ -64,20 +62,27 @@ def get_gem_content_paths(repo):
     :param repo: A dict of information about the repository.
     :returns: A list with the paths of units present in a given repository.
     """
-    # FIXME: The "relative_path" is actually a file path and name
-    # It's just an example -- this needs to be replaced with an implementation that works
-    # for repositories of this content type.
-    return [content_unit['relative_path'] for content_unit in get_content(repo)]
+    return ["gems/{}-{}.gem".format(content_unit['name'], content_unit['version'])
+            for content_unit in get_content(repo)]
 
 
 def gen_gem_content_attrs(artifact):
-    """Generate a dict with content unit attributes.
+    """Generate a dict with content unit attributes for create.
 
     :param: artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    # FIXME: Add content specific metadata here.
     return {'artifact': artifact['_href']}
+
+
+def gen_gem_content_verify_attrs(artifact):
+    """Generate a dict with content unit attributes for verification.
+
+    :param: artifact: A dict of info about the artifact.
+    :returns: A dict for use in verifying a content unit.
+    """
+    # TODO get more information about that file
+    return {'type': 'gem'}
 
 
 def populate_pulp(cfg, url=GEM_FIXTURE_URL):

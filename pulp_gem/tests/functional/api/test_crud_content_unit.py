@@ -21,14 +21,13 @@ from pulp_gem.tests.functional.constants import (
 )
 from pulp_gem.tests.functional.utils import (
     gen_gem_content_attrs,
+    gen_gem_content_verify_attrs,
     gen_gem_remote,
     skip_if
 )
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
-# Read the instructions provided below for the steps needed to enable this test (see: FIXME's).
-@unittest.skip("FIXME: plugin writer action required")
 class ContentUnitTestCase(unittest.TestCase):
     """CRUD content unit.
 
@@ -57,6 +56,7 @@ class ContentUnitTestCase(unittest.TestCase):
         """Create content unit."""
         attrs = gen_gem_content_attrs(self.artifact)
         self.content_unit.update(self.client.post(GEM_CONTENT_PATH, attrs))
+        attrs = gen_gem_content_verify_attrs(self.artifact)
         for key, val in attrs.items():
             with self.subTest(key=key):
                 self.assertEqual(self.content_unit[key], val)
@@ -72,10 +72,9 @@ class ContentUnitTestCase(unittest.TestCase):
     @skip_if(bool, 'content_unit', False)
     def test_02_read_content_units(self):
         """Read a content unit by its relative_path."""
-        # FIXME: 'relative_path' is an attribute specific to the File plugin. It is only an
-        # example. You should replace this with some other field specific to your content type.
         page = self.client.get(GEM_CONTENT_PATH, params={
-            'relative_path': self.content_unit['relative_path']
+            'name': self.content_unit['name'],
+            'version': self.content_unit['version'],
         })
         self.assertEqual(len(page['results']), 1)
         for key, val in self.content_unit.items():
@@ -103,8 +102,6 @@ class ContentUnitTestCase(unittest.TestCase):
             self.client.put(self.content_unit['_href'], attrs)
 
 
-# Implement sync support before enabling this test.
-@unittest.skip("FIXME: plugin writer action required")
 class DeleteContentUnitRepoVersionTestCase(unittest.TestCase):
     """Test whether content unit used by a repo version can be deleted.
 
