@@ -2,12 +2,8 @@
 # coding=utf-8
 set -veuo pipefail
 
-# check the commit message
-# Disabled for now. Reenable when a corresponding issue tracker has been created.
-# ./.travis/check_commit.sh
-
 # Lint code.
-flake8 --config flake8.cfg || exit 1
+flake8 --config flake8.cfg
 
 # Run migrations.
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
@@ -29,21 +25,7 @@ show_logs_and_return_non_zero() {
     readonly local rc="$?"
     cat ~/django_runserver.log
     cat ~/resource_manager.log
-    cat ~/reserved_worker-1.log
+    cat ~/'reserved_worker-1.log'
     return "${rc}"
 }
 pytest -v -r sx --color=yes --pyargs pulp_gem.tests.functional || show_logs_and_return_non_zero
-
-# test against pulpcore as well since we do not want the plugin to break core
-cd ../pulp
-pytest -v -r sx --color=yes --pyargs tests.functional.api.using_plugin || show_logs_and_return_non_zero
-
-# Travis' scripts use unbound variables. This is problematic, because the
-# changes made to this script's environment appear to persist when Travis'
-# scripts execute. Perhaps this script is sourced by Travis? Regardless of why,
-# we need to reset the environment when this script finishes.
-#
-# We can't use `trap cleanup_function EXIT` or similar, because this script is
-# apparently sourced, and such a trap won't execute until the (buggy!) calling
-# script finishes.
-set +euo pipefail
