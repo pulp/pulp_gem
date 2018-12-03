@@ -167,7 +167,7 @@ class GemFirstStage(Stage):
             root_dir = parsed_url.path
             specs_path = os.path.join(root_dir, 'specs.4.8.gz')
             specs_url = urlunparse(parsed_url._replace(path=specs_path))
-            downloader = self.remote.get_downloader(specs_url)
+            downloader = self.remote.get_downloader(url=specs_url)
             result = await downloader.run()
             pb.increment()
 
