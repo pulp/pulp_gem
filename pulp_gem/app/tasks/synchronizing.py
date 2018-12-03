@@ -30,59 +30,6 @@ from pulp_gem.specs import read_specs
 log = logging.getLogger(__name__)
 
 
-async def batches(in_q):
-    """
-    Asynchronous iterator yielding batches of :class:`DeclarativeContent` from `in_q`.
-
-    Args:
-        in_q (:class:`asyncio.Queue`): The queue to receive
-            :class:`~pulpcore.plugin.stages.DeclarativeContent` objects from.
-
-    Yields:
-        A list of :class:`DeclarativeContent` instances
-
-    Examples:
-        Used in stages to get large chunks of declarative_content instances from the
-        `in_q`::
-
-            async for batch in self.batches(in_q):
-                # process the batch and queue the result to out_q
-            await out_q.put(None) # stage is finished
-
-    """
-    shutdown = False
-
-    while not shutdown:
-        batch = []
-        content = await in_q.get()
-        if content is None:
-            shutdown = True
-        else:
-            batch.append(content)
-        try:
-            while not shutdown:
-                content = in_q.get_nowait()
-                if content is None:
-                    shutdown = True
-                else:
-                    batch.append(content)
-        except asyncio.QueueEmpty:
-            pass
-        if batch:
-            yield batch
-
-
-async def greedy_put(out_q, batch):
-    """
-    queue.put() that only reschedules when queue is full.
-    """
-    for content in batch:
-        try:
-            out_q.put_nowait(content)
-        except asyncio.QueueFull:
-            await out_q.put(content)
-
-
 class ExistingContentNeedsNoArtifacts(Stage):
     """
     Stage to remove declarative_artifacts from existing content.
@@ -107,11 +54,11 @@ class ExistingContentNeedsNoArtifacts(Stage):
             The coroutine for this stage.
 
         """
-        async for batch in batches(in_q):
+        async for batch in self.batches(in_q):
             for declarative_content in batch:
                 if declarative_content.content.pk is not None:
                     declarative_content.d_artifacts = []
-            await greedy_put(out_q, batch)
+                await out_q.put(declarative_content)
         await out_q.put(None)
 
 
