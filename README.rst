@@ -116,25 +116,12 @@ You need to upload the corresponding ``foo-0.0.1.gemspec.rz`` in the same way.
 Create ``gem`` content from an Artifact
 ---------------------------------------
 
-Create a file with the json below and save it as content.json.
+``$ http POST http://localhost:8000/pulp/api/v3/content/gem/gems/ artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
     {
-      "name": "foo",
-      "version": "0.0.1",
-      "artifacts": {
-        "gems/foo-0.0.1.gem":"http://localhost:8000/pulp/api/v3/artifacts/1/",
-        "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"http://localhost:8000/pulp/api/v3/artifacts/2/"
-      }
-    }
-
-``$ http POST http://localhost:8000/pulp/api/v3/content/gem/ < content.json``
-
-.. code:: json
-
-    {
-        "_href": "/pulp/api/v3/content/gem/1/",
+        "_href": "/pulp/api/v3/content/gem/gems/1/",
         "artifacts": {
             "gems/foo-0.0.1.gem":"/pulp/api/v3/artifacts/1/",
             "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"/pulp/api/v3/artifacts/2/"
@@ -145,4 +132,4 @@ Create a file with the json below and save it as content.json.
         "version": "0.0.1"
     }
 
-``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/gem/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/gem/gems/ | jq -r '.results[] | select(.name == "foo") | ._href')``
