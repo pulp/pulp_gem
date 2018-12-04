@@ -27,9 +27,6 @@ from pulp_gem.tests.functional.constants import (
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
-# Implement tests.functional.utils.get_gem_content_unit_paths(),
-# as well as sync and publish support before enabling this test.
-@unittest.skip("FIXME: plugin writer action required")
 class DownloadContentTestCase(unittest.TestCase):
     """Verify whether content served by pulp can be downloaded."""
 

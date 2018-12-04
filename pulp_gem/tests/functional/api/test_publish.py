@@ -27,8 +27,6 @@ from pulp_gem.tests.functional.constants import (
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
-# Implement sync and publish support before enabling this test.
-@unittest.skip("FIXME: plugin writer action required")
 class PublishAnyRepoVersionTestCase(unittest.TestCase):
     """Test whether a particular repository version can be published.
 
