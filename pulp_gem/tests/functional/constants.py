@@ -8,6 +8,9 @@ from pulp_smash.pulp3.constants import (
     CONTENT_PATH
 )
 
+DOWNLOAD_POLICIES = ['cache_only', 'immediate', 'on_demand']
+"""Allowed download policies. Defaults to immediate."""
+
 GEM_CONTENT_PATH = urljoin(CONTENT_PATH, 'gem/gems/')
 
 GEM_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'gem/')

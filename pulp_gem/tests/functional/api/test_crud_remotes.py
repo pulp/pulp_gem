@@ -9,7 +9,10 @@ from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_repo
 
-from pulp_gem.tests.functional.constants import GEM_REMOTE_PATH
+from pulp_gem.tests.functional.constants import (
+    DOWNLOAD_POLICIES,
+    GEM_REMOTE_PATH,
+)
 from pulp_gem.tests.functional.utils import skip_if, gen_gem_remote
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
@@ -136,6 +139,7 @@ def _gen_verbose_remote():
     attrs = gen_gem_remote()
     attrs.update({
         'password': utils.uuid4(),
+        'policy': choice(DOWNLOAD_POLICIES),
         'username': utils.uuid4(),
         'validate': choice((False, True)),
     })

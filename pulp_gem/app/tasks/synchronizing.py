@@ -5,7 +5,7 @@ import os
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressBar, Repository, RepositoryVersion
+from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository, RepositoryVersion
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -82,7 +82,9 @@ def synchronize(remote_pk, repository_pk, mirror):
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
     first_stage = GemFirstStage(remote)
-    GemDeclarativeVersion(first_stage, repository, mirror).create()
+    download = (remote.policy == Remote.IMMEDIATE)  # Interpret policy to download Artifacts or not
+    dv = GemDeclarativeVersion(first_stage, repository, mirror=mirror, download_artifacts=download)
+    dv.create()
 
 
 class GemFirstStage(Stage):
