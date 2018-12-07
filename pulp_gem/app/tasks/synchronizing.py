@@ -142,28 +142,31 @@ class GemFirstStage(Stage):
 class GemDeclarativeVersion(DeclarativeVersion):
     """
     Custom implementation of Declarative version.
-
-    This should go away with the new plugin api.
     """
 
-    def create(self):
+    def pipeline_stages(self, new_version):
         """
-        Perform the work. This is the long-blocking call where all syncing occurs.
+        Build the list of pipeline stages feeding into the ContentUnitAssociation stage.
+
+        If the `self.download_artifacts` is False the pipeline will not include Artifact downloading
+        and saving stages.
+
+        This is overwritten to create a custom pipeline.
+
+        Args:
+            new_version (:class:`~pulpcore.plugin.models.RepositoryVersion`): The
+                new repository version that is going to be built.
+
+        Returns:
+            list: List of :class:`~pulpcore.plugin.stages.Stage` instances
+
         """
-        with WorkingDirectory():
-            with RepositoryVersion.create(self.repository) as new_version:
-                loop = asyncio.get_event_loop()
-                stages = [
-                    self.first_stage,
-                    QueryExistingContentUnits(),
-                    ExistingContentNeedsNoArtifacts(),
-                    ArtifactDownloader(),
-                    ArtifactSaver(),
-                    ContentUnitSaver(),
-                    ContentUnitAssociation(new_version)
-                ]
-                if self.mirror:
-                    stages.append(ContentUnitUnassociation(new_version))
-                stages.append(EndStage())
-                pipeline = create_pipeline(stages)
-                loop.run_until_complete(pipeline)
+        pipeline = [
+            self.first_stage,
+            QueryExistingContentUnits(),
+            ExistingContentNeedsNoArtifacts(),
+        ]
+        if self.download_artifacts:
+            pipeline.extend([ArtifactDownloader(), ArtifactSaver()])
+        pipeline.append(ContentUnitSaver())
+        return pipeline
