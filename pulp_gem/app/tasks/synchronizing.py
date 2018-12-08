@@ -1,11 +1,10 @@
-import asyncio
 import logging
 import os
 
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository, RepositoryVersion
+from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -15,13 +14,7 @@ from pulpcore.plugin.stages import (
     ArtifactSaver,
     QueryExistingContentUnits,
     ContentUnitSaver,
-    ContentUnitAssociation,
-    ContentUnitUnassociation,
-    EndStage,
-    create_pipeline,
 )
-
-from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import read_specs
