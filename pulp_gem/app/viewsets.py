@@ -3,43 +3,36 @@ import os
 from gettext import gettext as _
 
 from django.db import transaction
-from django_filters.rest_framework import filterset
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import detail_route
-from rest_framework import serializers, status
+from rest_framework import status
 from rest_framework.response import Response
 
 from pulpcore.app.files import PulpTemporaryUploadedFile
 from pulpcore.plugin.models import Artifact, ContentArtifact
+from pulpcore.plugin import viewsets as core
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositoryPublishURLSerializer,
     RepositorySyncURLSerializer,
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation
-from pulpcore.plugin.viewsets import (
-    ContentViewSet,
-    RemoteViewSet,
-    OperationPostponedResponse,
-    PublisherViewSet,
-)
 
-from . import tasks
-from .models import GemContent, GemRemote, GemPublisher
-from .serializers import GemContentSerializer, GemRemoteSerializer, GemPublisherSerializer
+from . import models, serializers, tasks
+
 from ..specs import analyse_gem
 
 
-class GemContentFilter(filterset.FilterSet):
+class GemContentFilter(core.ContentFilter):
     """
     FilterSet for GemContent.
     """
 
     class Meta:
-        model = GemContent
+        model = models.GemContent
         fields = [
             'name',
-            'version'
+            'version',
         ]
 
 
@@ -59,24 +52,24 @@ def _artifact_from_data(raw_data):
     return artifact
 
 
-class GemContentViewSet(ContentViewSet):
+class GemContentViewSet(core.ContentViewSet):
     """
-    ViewSet for GemContent.
+    A ViewSet for GemContent.
     """
 
     endpoint_name = 'gem/gems'
-    queryset = GemContent.objects.all()
-    serializer_class = GemContentSerializer
-    filter_class = GemContentFilter
+    queryset = models.GemContent.objects.all()
+    serializer_class = serializers.GemContentSerializer
+    filterset_class = GemContentFilter
 
     @transaction.atomic
     def create(self, request):
         """
         Create GemContent from an artifact.
         """
-        data = request.data
+        data = {}
         try:
-            artifact = self.get_resource(data.pop('artifact'), Artifact)
+            artifact = self.get_resource(request.data['artifact'], Artifact)
         except KeyError:
             raise serializers.ValidationError(detail={'artifact': _('This field is required')})
 
@@ -101,17 +94,19 @@ class GemContentViewSet(ContentViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class GemRemoteViewSet(RemoteViewSet):
+class GemRemoteViewSet(core.RemoteViewSet):
     """
-    ViewSet for Gem Remotes.
+    A ViewSet for GemRemote.
     """
 
     endpoint_name = 'gem'
-    queryset = GemRemote.objects.all()
-    serializer_class = GemRemoteSerializer
+    queryset = models.GemRemote.objects.all()
+    serializer_class = serializers.GemRemoteSerializer
 
+    # This decorator is necessary since a sync operation is asyncrounous and returns
+    # the id and href of the sync task.
     @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to sync gem content.",
+        operation_description="Trigger an asynchronous task to sync gem content",
         responses={202: AsyncOperationResponseSerializer}
     )
     @detail_route(methods=('post',), serializer_class=RepositorySyncURLSerializer)
@@ -123,6 +118,8 @@ class GemRemoteViewSet(RemoteViewSet):
         """
         remote = self.get_object()
         serializer = RepositorySyncURLSerializer(data=request.data, context={'request': request})
+
+        # Validate synchronously to return 400 errors.
         serializer.is_valid(raise_exception=True)
         repository = serializer.validated_data.get('repository')
         mirror = serializer.validated_data.get('mirror', True)
@@ -135,20 +132,22 @@ class GemRemoteViewSet(RemoteViewSet):
                 'mirror': mirror,
             }
         )
-        return OperationPostponedResponse(result, request)
+        return core.OperationPostponedResponse(result, request)
 
 
-class GemPublisherViewSet(PublisherViewSet):
+class GemPublisherViewSet(core.PublisherViewSet):
     """
-    ViewSet for Gem Publishers.
+    A ViewSet for GemPublisher.
     """
 
     endpoint_name = 'gem'
-    queryset = GemPublisher.objects.all()
-    serializer_class = GemPublisherSerializer
+    queryset = models.GemPublisher.objects.all()
+    serializer_class = serializers.GemPublisherSerializer
 
+    # This decorator is necessary since a publish operation is asyncrounous and returns
+    # the id and href of the publish task.
     @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to publish gem content.",
+        operation_description="Trigger an asynchronous task to publish gem content",
         responses={202: AsyncOperationResponseSerializer}
     )
     @detail_route(methods=('post',), serializer_class=RepositoryPublishURLSerializer)
@@ -160,8 +159,10 @@ class GemPublisherViewSet(PublisherViewSet):
         be provided but not both at the same time.
         """
         publisher = self.get_object()
-        serializer = RepositoryPublishURLSerializer(data=request.data,
-                                                    context={'request': request})
+        serializer = RepositoryPublishURLSerializer(
+            data=request.data,
+            context={'request': request},
+        )
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get('repository_version')
 
@@ -173,4 +174,4 @@ class GemPublisherViewSet(PublisherViewSet):
                 'repository_version_pk': str(repository_version.pk)
             }
         )
-        return OperationPostponedResponse(result, request)
+        return core.OperationPostponedResponse(result, request)

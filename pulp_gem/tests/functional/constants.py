@@ -8,8 +8,10 @@ from pulp_smash.pulp3.constants import (
     CONTENT_PATH
 )
 
-DOWNLOAD_POLICIES = ['cache_only', 'immediate', 'on_demand']
-"""Allowed download policies. Defaults to immediate."""
+
+DOWNLOAD_POLICIES = ['immediate', 'streamed', 'on_demand']
+
+GEM_CONTENT_NAME = 'gem'
 
 GEM_CONTENT_PATH = urljoin(CONTENT_PATH, 'gem/gems/')
 
@@ -22,6 +24,10 @@ GEM_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'gem/')
 GEM_FIXTURE_URL = 'https://repos.fedorapeople.org/pulp/pulp/demo_repos/gems/repo/'
 
 GEM_FIXTURE_COUNT = 3
+
+GEM_FIXTURE_SUMMARY = {
+    GEM_CONTENT_NAME: GEM_FIXTURE_COUNT
+}
 
 GEM_URL = urljoin(GEM_FIXTURE_URL, 'gems/panda-0.1.0.gem')
 

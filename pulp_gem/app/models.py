@@ -33,17 +33,17 @@ class GemContent(Content):
         )
 
 
-class GemRemote(Remote):
+class GemPublisher(Publisher):
     """
-    Remote for "gem" content.
+    A Publisher for GemContent.
     """
 
     TYPE = 'gem'
 
 
-class GemPublisher(Publisher):
+class GemRemote(Remote):
     """
-    Publisher for "gem" content.
+    A Remote for GemContent.
     """
 
     TYPE = 'gem'

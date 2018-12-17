@@ -18,6 +18,7 @@ from pulp_smash.pulp3.utils import (
 )
 
 from pulp_gem.tests.functional.constants import (
+    GEM_CONTENT_NAME,
     GEM_CONTENT_PATH,
     GEM_FIXTURE_URL,
     GEM_REMOTE_PATH,
@@ -62,8 +63,10 @@ def get_gem_content_paths(repo):
     :param repo: A dict of information about the repository.
     :returns: A list with the paths of units present in a given repository.
     """
-    return ["gems/{}-{}.gem".format(content_unit['name'], content_unit['version'])
-            for content_unit in get_content(repo)]
+    return [
+        "gems/{}-{}.gem".format(content_unit['name'], content_unit['version'])
+        for content_unit in get_content(repo)[GEM_CONTENT_NAME]
+    ]
 
 
 def gen_gem_content_attrs(artifact):
