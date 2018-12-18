@@ -1,14 +1,12 @@
 from rest_framework import serializers
+from pulpcore.plugin import serializers as platform
 
-from pulpcore.plugin.serializers import ContentSerializer, RemoteSerializer, \
-    PublisherSerializer
-
-from .models import GemContent, GemRemote, GemPublisher
+from . import models
 
 
-class GemContentSerializer(ContentSerializer):
+class GemContentSerializer(platform.ContentSerializer):
     """
-    Serializer for Gem Content.
+    A Serializer for GemContent.
     """
 
     name = serializers.CharField(
@@ -19,25 +17,26 @@ class GemContentSerializer(ContentSerializer):
     )
 
     class Meta:
-        fields = tuple(set(ContentSerializer.Meta.fields) - {'artifacts'}) + ('name', 'version')
-        model = GemContent
+        fields = tuple(set(platform.ContentSerializer.Meta.fields) - {'artifacts'}) + ('name',
+                                                                                       'version')
+        model = models.GemContent
 
 
-class GemRemoteSerializer(RemoteSerializer):
+class GemRemoteSerializer(platform.RemoteSerializer):
     """
-    Serializer for Gem Remotes.
-    """
-
-    class Meta:
-        fields = RemoteSerializer.Meta.fields
-        model = GemRemote
-
-
-class GemPublisherSerializer(PublisherSerializer):
-    """
-    Serializer for Gem Publishers.
+    A Serializer for GemRemote.
     """
 
     class Meta:
-        fields = PublisherSerializer.Meta.fields
-        model = GemPublisher
+        fields = platform.RemoteSerializer.Meta.fields
+        model = models.GemRemote
+
+
+class GemPublisherSerializer(platform.PublisherSerializer):
+    """
+    A Serializer for GemPublisher.
+    """
+
+    class Meta:
+        fields = platform.PublisherSerializer.Meta.fields
+        model = models.GemPublisher

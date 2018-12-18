@@ -51,14 +51,11 @@ def publish(publisher_pk, repository_version_pk):
     publisher = GemPublisher.objects.get(pk=publisher_pk)
     repository_version = RepositoryVersion.objects.get(pk=repository_version_pk)
 
-    log.info(
-        _('Publishing: repository=%(repository)s, version=%(version)d, publisher=%(publisher)s'),
-        {
-            'repository': repository_version.repository.name,
-            'version': repository_version.number,
-            'publisher': publisher.name,
-        })
-
+    log.info(_('Publishing: repository={repo}, version={ver}, publisher={pub}').format(
+        repo=repository_version.repository.name,
+        ver=repository_version.number,
+        pub=publisher.name
+    ))
     with WorkingDirectory():
         with Publication.create(repository_version, publisher) as publication:
             specs = []
@@ -85,8 +82,4 @@ def publish(publisher_pk, repository_version_pk):
             _publish_specs(latest_specs, 'latest_specs.4.8', publication)
             _publish_specs(prerelease_specs, 'prerelease_specs.4.8', publication)
 
-    log.info(
-        _('Publication: %(publication)s created'),
-        {
-            'publication': publication.pk
-        })
+    log.info(_('Publication: {publication} created').format(publication=publication.pk))

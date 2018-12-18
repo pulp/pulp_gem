@@ -74,9 +74,15 @@ def synchronize(remote_pk, repository_pk, mirror):
     if not remote.url:
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
+    # Interpret policy to download Artifacts or not
+    download_artifacts = (remote.policy == Remote.IMMEDIATE)
     first_stage = GemFirstStage(remote)
-    download = (remote.policy == Remote.IMMEDIATE)  # Interpret policy to download Artifacts or not
-    dv = GemDeclarativeVersion(first_stage, repository, mirror=mirror, download_artifacts=download)
+    dv = GemDeclarativeVersion(
+        first_stage,
+        repository,
+        mirror=mirror,
+        download_artifacts=download_artifacts,
+    )
     dv.create()
 
 

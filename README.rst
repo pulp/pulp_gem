@@ -47,9 +47,10 @@ Install ``pulp-gem`` from source
 6)  pulp-manager makemigrations pulp\_gem
 7)  pulp-manager migrate pulp\_gem
 8)  django-admin runserver
-9)  sudo systemctl restart pulp\_resource\_manager
-10) sudo systemctl restart pulp\_worker@1
-11) sudo systemctl restart pulp\_worker@2
+9)  gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
+10) sudo systemctl restart pulp\_resource\_manager
+11) sudo systemctl restart pulp\_worker@1
+12) sudo systemctl restart pulp\_worker@2
 
 Install ``pulp-gem`` From PyPI
 ------------------------------
@@ -60,9 +61,10 @@ Install ``pulp-gem`` From PyPI
 4) pulp-manager makemigrations pulp\_gem
 5) pulp-manager migrate pulp\_gem
 6) django-admin runserver
-7) sudo systemctl restart pulp\_resource\_manager
-8) sudo systemctl restart pulp\_worker@1
-9) sudo systemctl restart pulp\_worker@2
+7) gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
+8) sudo systemctl restart pulp\_resource\_manager
+9) sudo systemctl restart pulp\_worker@1
+10) sudo systemctl restart pulp\_worker@2
 
 Create a repository ``foo``
 ---------------------------
