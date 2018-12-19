@@ -3,7 +3,7 @@
 from setuptools import find_packages, setup
 
 requirements = [
-    'pulpcore-plugin>=0.1.0b14',
+    'pulpcore-plugin>=0.1.0b15',
     'rubymarshal',
 ]
 
@@ -12,7 +12,7 @@ with open('README.rst') as f:
 
 setup(
     name='pulp-gem',
-    version='0.0.1b1',
+    version='0.0.1b2',
     description='Gemfile plugin for the Pulp Project',
     long_description=long_description,
     license='GPLv2+',

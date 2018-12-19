@@ -6,6 +6,7 @@ from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import detail_route
 from rest_framework import status
+from rest_framework import serializers as rest_serializers
 from rest_framework.response import Response
 
 from pulpcore.app.files import PulpTemporaryUploadedFile
@@ -71,7 +72,7 @@ class GemContentViewSet(core.ContentViewSet):
         try:
             artifact = self.get_resource(request.data['artifact'], Artifact)
         except KeyError:
-            raise serializers.ValidationError(detail={'artifact': _('This field is required')})
+            raise rest_serializers.ValidationError(detail={'artifact': _('This field is required')})
 
         name, version, spec_data = analyse_gem(artifact.file.name)
         data['name'] = name

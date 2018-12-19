@@ -83,7 +83,7 @@ Create a repository ``foo``
 Add a remote
 ------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/' policy='cache_only'``
+``$ http POST http://localhost:8000/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/' policy='streamed'``
 
 .. code:: json
 
