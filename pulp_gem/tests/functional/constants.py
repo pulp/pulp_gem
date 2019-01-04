@@ -11,7 +11,7 @@ from pulp_smash.pulp3.constants import (
 
 DOWNLOAD_POLICIES = ['immediate', 'streamed', 'on_demand']
 
-GEM_CONTENT_NAME = 'gem'
+GEM_CONTENT_NAME = 'pulp_gem.gem'
 
 GEM_CONTENT_PATH = urljoin(CONTENT_PATH, 'gem/gems/')
 

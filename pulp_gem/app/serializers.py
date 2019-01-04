@@ -17,8 +17,8 @@ class GemContentSerializer(platform.ContentSerializer):
     )
 
     class Meta:
-        fields = tuple(set(platform.ContentSerializer.Meta.fields) - {'artifacts'}) + ('name',
-                                                                                       'version')
+        fields = tuple(set(platform.ContentSerializer.Meta.fields) - {'_artifacts'}) + ('name',
+                                                                                        'version')
         model = models.GemContent
 
 

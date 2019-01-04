@@ -85,7 +85,7 @@ def gen_gem_content_verify_attrs(artifact):
     :returns: A dict for use in verifying a content unit.
     """
     # TODO get more information about that file
-    return {'type': 'gem'}
+    return {'_type': GEM_CONTENT_NAME}
 
 
 def populate_pulp(cfg, url=GEM_FIXTURE_URL):
