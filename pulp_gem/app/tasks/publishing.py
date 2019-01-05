@@ -62,7 +62,7 @@ def publish(publisher_pk, repository_version_pk):
             latest_versions = {}
             prerelease_specs = []
             for content in GemContent.objects.filter(
-                    pk__in=publication.repository_version.content).order_by('-created'):
+                    pk__in=publication.repository_version.content).order_by('-_created'):
                 for content_artifact in content.contentartifact_set.all():
                     published_artifact = PublishedArtifact(
                         relative_path=content_artifact.relative_path,
