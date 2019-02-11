@@ -1,19 +1,8 @@
-import os
-
-from gettext import gettext as _
-
-from django.db import transaction
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import detail_route
-from rest_framework import status
-from rest_framework import serializers as rest_serializers
-from rest_framework.response import Response
 
-from pulpcore.app.files import PulpTemporaryUploadedFile
-from pulpcore.plugin.models import Artifact, ContentArtifact
 from pulpcore.plugin import viewsets as core
 from pulpcore.plugin.serializers import (
-    ArtifactSerializer,
     AsyncOperationResponseSerializer,
     RepositoryPublishURLSerializer,
     RepositorySyncURLSerializer,
@@ -21,8 +10,6 @@ from pulpcore.plugin.serializers import (
 from pulpcore.plugin.tasking import enqueue_with_reservation
 
 from . import models, serializers, tasks
-
-from ..specs import analyse_gem
 
 
 class GemContentFilter(core.ContentFilter):
@@ -38,22 +25,6 @@ class GemContentFilter(core.ContentFilter):
         ]
 
 
-def _artifact_from_data(raw_data):
-    tmpfile = PulpTemporaryUploadedFile(
-        "tmpfile",
-        "application/octet-stream",
-        len(raw_data),
-        "",
-        "",
-    )
-    tmpfile.write(raw_data)
-
-    artifact_serializer = ArtifactSerializer(data={'file': tmpfile})
-    artifact_serializer.is_valid(raise_exception=True)
-
-    return artifact_serializer.save()
-
-
 class GemContentViewSet(core.ContentViewSet):
     """
     A ViewSet for GemContent.
@@ -63,52 +34,6 @@ class GemContentViewSet(core.ContentViewSet):
     queryset = models.GemContent.objects.all()
     serializer_class = serializers.GemContentSerializer
     filterset_class = GemContentFilter
-
-    @transaction.atomic
-    def create(self, request):
-        """
-        Create GemContent from an artifact.
-        """
-        data = {}
-        try:
-            artifact_url = request.data.pop('_artifact')
-            artifact = self.get_resource(artifact_url, Artifact)
-        except KeyError:
-            raise rest_serializers.ValidationError(
-                detail={'_artifact': _('This field is required')},
-            )
-
-        name, version, spec_data = analyse_gem(artifact.file.name)
-        relative_path = os.path.join('gems', name + '-' + version + '.gem')
-
-        spec_artifact = _artifact_from_data(spec_data)
-        spec_relative_path = os.path.join('quick/Marshal.4.8', name + '-' + version + '.gemspec.rz')
-        spec_artifact_url = ArtifactSerializer(
-            spec_artifact,
-            context={'request': request},
-        ).data['_href']
-
-        data['name'] = name
-        data['version'] = version
-        data['_artifacts'] = {
-            relative_path: artifact_url,
-            spec_relative_path: spec_artifact_url,
-        }
-
-        serializer = self.get_serializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.validated_data.pop('_artifacts')
-        content = serializer.save()
-
-        ContentArtifact(artifact=artifact,
-                        content=content,
-                        relative_path=relative_path).save()
-        ContentArtifact(artifact=spec_artifact,
-                        content=content,
-                        relative_path=spec_relative_path).save()
-
-        headers = self.get_success_headers(request.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class GemRemoteViewSet(core.RemoteViewSet):
