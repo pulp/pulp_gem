@@ -12,8 +12,8 @@ from pulpcore.plugin.stages import (
     Stage,
     ArtifactDownloader,
     ArtifactSaver,
-    QueryExistingContentUnits,
-    ContentUnitSaver,
+    QueryExistingContents,
+    ContentSaver,
 )
 
 from pulp_gem.app.models import GemContent, GemRemote
@@ -33,26 +33,19 @@ class ExistingContentNeedsNoArtifacts(Stage):
     :class:`~pulpcore.plugin.models.Content` is already existing.
     """
 
-    async def __call__(self, in_q, out_q):
+    async def run(self):
         """
         The coroutine for this stage.
-
-        Args:
-            in_q (:class:`asyncio.Queue`): The queue to receive
-                :class:`~pulpcore.plugin.stages.DeclarativeContent` objects from.
-            out_q (:class:`asyncio.Queue`): The queue to put
-                :class:`~pulpcore.plugin.stages.DeclarativeContent` into.
 
         Returns:
             The coroutine for this stage.
 
         """
-        async for batch in self.batches(in_q):
+        async for batch in self.batches():
             for declarative_content in batch:
                 if declarative_content.content.pk is not None:
                     declarative_content.d_artifacts = []
-                await out_q.put(declarative_content)
-        await out_q.put(None)
+                await self.put(declarative_content)
 
 
 def synchronize(remote_pk, repository_pk, mirror):
@@ -101,14 +94,9 @@ class GemFirstStage(Stage):
         """
         self.remote = remote
 
-    async def __call__(self, in_q, out_q):
+    async def run(self):
         """
         Build and emit `DeclarativeContent` from the Spec data.
-
-        Args:
-            in_q (asyncio.Queue): Unused because the first stage doesn't read from an input queue.
-            out_q (asyncio.Queue): The out_q to send `DeclarativeContent` objects to
-
         """
         with ProgressBar(message='Downloading Metadata') as pb:
             parsed_url = urlparse(self.remote.url)
@@ -134,8 +122,7 @@ class GemFirstStage(Stage):
                 da_spec = DeclarativeArtifact(Artifact(), spec_url, spec_relative_path, self.remote)
                 dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_spec])
                 pb.increment()
-                await out_q.put(dc)
-        await out_q.put(None)
+                await self.put(dc)
 
 
 class GemDeclarativeVersion(DeclarativeVersion):
@@ -162,10 +149,10 @@ class GemDeclarativeVersion(DeclarativeVersion):
         """
         pipeline = [
             self.first_stage,
-            QueryExistingContentUnits(),
+            QueryExistingContents(),
             ExistingContentNeedsNoArtifacts(),
         ]
         if self.download_artifacts:
             pipeline.extend([ArtifactDownloader(), ArtifactSaver()])
-        pipeline.append(ContentUnitSaver())
+        pipeline.append(ContentSaver())
         return pipeline

@@ -13,6 +13,7 @@ from pulpcore.app.files import PulpTemporaryUploadedFile
 from pulpcore.plugin.models import Artifact, ContentArtifact
 from pulpcore.plugin import viewsets as core
 from pulpcore.plugin.serializers import (
+    ArtifactSerializer,
     AsyncOperationResponseSerializer,
     RepositoryPublishURLSerializer,
     RepositorySyncURLSerializer,
@@ -38,19 +39,19 @@ class GemContentFilter(core.ContentFilter):
 
 
 def _artifact_from_data(raw_data):
-    tmpfile = PulpTemporaryUploadedFile("", "application/octet-stream", len(raw_data), "", "")
+    tmpfile = PulpTemporaryUploadedFile(
+        "tmpfile",
+        "application/octet-stream",
+        len(raw_data),
+        "",
+        "",
+    )
     tmpfile.write(raw_data)
-    for hasher in Artifact.DIGEST_FIELDS:
-        tmpfile.hashers[hasher].update(raw_data)
 
-    artifact = Artifact()
-    artifact.file = tmpfile
-    artifact.size = tmpfile.size
-    for hasher in Artifact.DIGEST_FIELDS:
-        setattr(artifact, hasher, tmpfile.hashers[hasher].hexdigest())
+    artifact_serializer = ArtifactSerializer(data={'file': tmpfile})
+    artifact_serializer.is_valid(raise_exception=True)
 
-    artifact.save()
-    return artifact
+    return artifact_serializer.save()
 
 
 class GemContentViewSet(core.ContentViewSet):
@@ -58,7 +59,7 @@ class GemContentViewSet(core.ContentViewSet):
     A ViewSet for GemContent.
     """
 
-    endpoint_name = 'gem/gems'
+    endpoint_name = 'gems'
     queryset = models.GemContent.objects.all()
     serializer_class = serializers.GemContentSerializer
     filterset_class = GemContentFilter
@@ -69,25 +70,38 @@ class GemContentViewSet(core.ContentViewSet):
         Create GemContent from an artifact.
         """
         data = {}
+        artifact_url = request.data['artifact']
         try:
-            artifact = self.get_resource(request.data['artifact'], Artifact)
+            artifact = self.get_resource(artifact_url, Artifact)
         except KeyError:
             raise rest_serializers.ValidationError(detail={'artifact': _('This field is required')})
 
         name, version, spec_data = analyse_gem(artifact.file.name)
+        relative_path = os.path.join('gems', name + '-' + version + '.gem')
+
+        spec_artifact = _artifact_from_data(spec_data)
+        spec_relative_path = os.path.join('quick/Marshal.4.8', name + '-' + version + '.gemspec.rz')
+        spec_artifact_url = ArtifactSerializer(
+            spec_artifact,
+            context={'request': request},
+        ).data['_href']
+
         data['name'] = name
         data['version'] = version
+        data['_artifacts'] = {
+            relative_path: artifact_url,
+            spec_relative_path: spec_artifact_url,
+        }
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
+        serializer.validated_data.pop('_artifacts')
         content = serializer.save()
 
-        relative_path = os.path.join('gems', name + '-' + version + '.gem')
-        spec_relative_path = os.path.join('quick/Marshal.4.8', name + '-' + version + '.gemspec.rz')
         ContentArtifact(artifact=artifact,
                         content=content,
                         relative_path=relative_path).save()
-        ContentArtifact(artifact=_artifact_from_data(spec_data),
+        ContentArtifact(artifact=spec_artifact,
                         content=content,
                         relative_path=spec_relative_path).save()
 

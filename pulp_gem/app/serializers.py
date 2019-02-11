@@ -4,7 +4,7 @@ from pulpcore.plugin import serializers as platform
 from . import models
 
 
-class GemContentSerializer(platform.ContentSerializer):
+class GemContentSerializer(platform.MultipleArtifactContentSerializer):
     """
     A Serializer for GemContent.
     """
@@ -17,8 +17,10 @@ class GemContentSerializer(platform.ContentSerializer):
     )
 
     class Meta:
-        fields = tuple(set(platform.ContentSerializer.Meta.fields) - {'_artifacts'}) + ('name',
-                                                                                        'version')
+        fields = platform.MultipleArtifactContentSerializer.Meta.fields + (
+            'name',
+            'version',
+        )
         model = models.GemContent
 
 

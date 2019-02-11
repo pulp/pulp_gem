@@ -11,13 +11,13 @@ from pulp_smash.pulp3.constants import (
 
 DOWNLOAD_POLICIES = ['immediate', 'streamed', 'on_demand']
 
-GEM_CONTENT_NAME = 'pulp_gem.gem'
+GEM_CONTENT_NAME = 'gem.gem'
 
 GEM_CONTENT_PATH = urljoin(CONTENT_PATH, 'gem/gems/')
 
-GEM_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'gem/')
+GEM_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, 'gem/gem/')
 
-GEM_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'gem/')
+GEM_PUBLISHER_PATH = urljoin(BASE_PUBLISHER_PATH, 'gem/gem/')
 
 
 # GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'gem/')

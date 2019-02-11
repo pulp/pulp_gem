@@ -3,8 +3,8 @@ from pulpcore.plugin import PulpPluginAppConfig
 
 class PulpGemPluginAppConfig(PulpPluginAppConfig):
     """
-    Entry point for pulp_file plugin.
+    Entry point for pulp_gem plugin.
     """
 
     name = 'pulp_gem.app'
-    label = 'pulp_gem'
+    label = 'gem'
