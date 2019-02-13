@@ -70,11 +70,13 @@ class GemContentViewSet(core.ContentViewSet):
         Create GemContent from an artifact.
         """
         data = {}
-        artifact_url = request.data['artifact']
         try:
+            artifact_url = request.data.pop('_artifact')
             artifact = self.get_resource(artifact_url, Artifact)
         except KeyError:
-            raise rest_serializers.ValidationError(detail={'artifact': _('This field is required')})
+            raise rest_serializers.ValidationError(
+                detail={'_artifact': _('This field is required')},
+            )
 
         name, version, spec_data = analyse_gem(artifact.file.name)
         relative_path = os.path.join('gems', name + '-' + version + '.gem')

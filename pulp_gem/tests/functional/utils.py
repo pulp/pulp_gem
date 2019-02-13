@@ -75,7 +75,7 @@ def gen_gem_content_attrs(artifact):
     :param: artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {'artifact': artifact['_href']}
+    return {'_artifact': artifact['_href']}
 
 
 def gen_gem_content_verify_attrs(artifact):
