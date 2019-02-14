@@ -118,13 +118,13 @@ You need to upload the corresponding ``foo-0.0.1.gemspec.rz`` in the same way.
 Create ``gem`` content from an Artifact
 ---------------------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/gem/gems/ artifact="/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:8000/pulp/api/v3/content/gem/gems/ _artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
     {
         "_href": "/pulp/api/v3/content/gem/gems/1/",
-        "artifacts": {
+        "_artifacts": {
             "gems/foo-0.0.1.gem":"/pulp/api/v3/artifacts/1/",
             "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"/pulp/api/v3/artifacts/2/"
         },
