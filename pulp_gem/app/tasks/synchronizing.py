@@ -14,6 +14,7 @@ from pulpcore.plugin.stages import (
     ArtifactSaver,
     QueryExistingContents,
     ContentSaver,
+    RemoteArtifactSaver,
 )
 
 from pulp_gem.app.models import GemContent, GemRemote
@@ -23,11 +24,12 @@ from pulp_gem.specs import read_specs
 log = logging.getLogger(__name__)
 
 
-class ExistingContentNeedsNoArtifacts(Stage):
+class UpdateExistingContentArtifacts(Stage):
     """
-    Stage to remove declarative_artifacts from existing content.
+    Stage to update declarative_artifacts from existing content.
 
-    A Stages API stage that removes all
+    A Stages API stage that sets existing
+    :class:`~pulpcore.plugin.models.Artifact` in
     :class:`~pulpcore.plugin.stages.DeclarativeArtifact` instances from
     :class:`~pulpcore.plugin.stages.DeclarativeContent` units if the respective
     :class:`~pulpcore.plugin.models.Content` is already existing.
@@ -41,11 +43,13 @@ class ExistingContentNeedsNoArtifacts(Stage):
             The coroutine for this stage.
 
         """
-        async for batch in self.batches():
-            for declarative_content in batch:
-                if declarative_content.content.pk is not None:
-                    declarative_content.d_artifacts = []
-                await self.put(declarative_content)
+        async for d_content in self.items():
+            if d_content.content.pk is not None:
+                for d_artifact in d_content.d_artifacts:
+                    content_artifact = d_content.content.contentartifact_set.get(
+                        relative_path=d_artifact.relative_path)
+                    d_artifact.artifact = content_artifact.artifact
+            await self.put(d_content)
 
 
 def synchronize(remote_pk, repository_pk, mirror):
@@ -150,9 +154,15 @@ class GemDeclarativeVersion(DeclarativeVersion):
         pipeline = [
             self.first_stage,
             QueryExistingContents(),
-            ExistingContentNeedsNoArtifacts(),
+            UpdateExistingContentArtifacts(),
         ]
         if self.download_artifacts:
-            pipeline.extend([ArtifactDownloader(), ArtifactSaver()])
-        pipeline.append(ContentSaver())
+            pipeline.extend([
+                ArtifactDownloader(),
+                ArtifactSaver(),
+            ])
+        pipeline.extend([
+            ContentSaver(),
+            RemoteArtifactSaver(),
+        ])
         return pipeline
