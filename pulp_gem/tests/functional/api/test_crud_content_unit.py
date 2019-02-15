@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Tests that CRUD gem content units."""
+"""Tests that perform actions over content unit."""
 import unittest
 
 from requests.exceptions import HTTPError
@@ -15,7 +15,7 @@ from pulp_gem.tests.functional.constants import (
 from pulp_gem.tests.functional.utils import (
     gen_gem_content_attrs,
     gen_gem_content_verify_attrs,
-    skip_if
+    skip_if,
 )
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
