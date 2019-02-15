@@ -4,17 +4,15 @@ from functools import partial
 from unittest import SkipTest
 
 from pulp_smash import api, selectors
-from pulp_smash.pulp3.constants import (
-    REPO_PATH
-)
+from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
+    gen_publisher,
     gen_remote,
     gen_repo,
-    gen_publisher,
     get_content,
     require_pulp_3,
     require_pulp_plugins,
-    sync
+    sync,
 )
 
 from pulp_gem.tests.functional.constants import (
@@ -31,36 +29,27 @@ def set_up_module():
     require_pulp_plugins({'pulp_gem'}, SkipTest)
 
 
-def gen_gem_remote(**kwargs):
+def gen_gem_remote(url=GEM_FIXTURE_URL, **kwargs):
     """Return a semi-random dict for use in creating a gem Remote.
 
     :param url: The URL of an external content source.
     """
-    remote = gen_remote(GEM_FIXTURE_URL)
-    gem_extra_fields = {
-        **kwargs
-    }
-    remote.update(**gem_extra_fields)
-    return remote
+    return gen_remote(url, **kwargs)
 
 
 def gen_gem_publisher(**kwargs):
-    """Return a semi-random dict for use in creating a Remote.
+    """Return a semi-random dict for use in creating a gem Publisher.
 
     :param url: The URL of an external content source.
     """
-    publisher = gen_publisher()
-    gem_extra_fields = {
-        **kwargs
-    }
-    publisher.update(**gem_extra_fields)
-    return publisher
+    return gen_publisher(**kwargs)
 
 
-def get_gem_content_paths(repo):
+def get_gem_content_paths(repo, version_href=None):
     """Return the relative path of content units present in a gem repository.
 
     :param repo: A dict of information about the repository.
+    :param version_href: The repository version to read.
     :returns: A list with the paths of units present in a given repository.
     """
     return [
@@ -72,7 +61,7 @@ def get_gem_content_paths(repo):
 def gen_gem_content_attrs(artifact):
     """Generate a dict with content unit attributes for create.
 
-    :param: artifact: A dict of info about the artifact.
+    :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
     return {'_artifact': artifact['_href']}

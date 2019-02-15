@@ -2,7 +2,8 @@
 """Tests that sync gem plugin repositories."""
 import unittest
 
-from pulp_smash import api, cli, config, exceptions
+from pulp_smash import api, cli, config
+from pulp_smash.exceptions import TaskReportError
 from pulp_smash.pulp3.constants import MEDIA_PATH, REPO_PATH
 from pulp_smash.pulp3.utils import (
     gen_repo,
@@ -13,15 +14,15 @@ from pulp_smash.pulp3.utils import (
 
 from pulp_gem.tests.functional.constants import (
     GEM_FIXTURE_SUMMARY,
-    GEM_REMOTE_PATH
+    GEM_INVALID_FIXTURE_URL,
+    GEM_REMOTE_PATH,
 )
 from pulp_gem.tests.functional.utils import gen_gem_remote
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
-# Implement sync support before enabling this test.
 class BasicSyncTestCase(unittest.TestCase):
-    """Sync repositories with the gem plugin."""
+    """Sync a repository with the gem plugin."""
 
     @classmethod
     def setUpClass(cls):
@@ -42,8 +43,12 @@ class BasicSyncTestCase(unittest.TestCase):
         2. Assert that repository version is None.
         3. Sync the remote.
         4. Assert that repository version is not None.
-        5. Sync the remote one more time.
-        6. Assert that repository version is different from the previous one.
+        5. Assert that the correct number of units were added and are present
+           in the repo.
+        6. Sync the remote one more time.
+        7. Assert that repository version is different from the previous one.
+        8. Assert that the same number of are present and that no units were
+           added.
         """
         repo = self.client.post(REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo['_href'])
@@ -74,9 +79,11 @@ class BasicSyncTestCase(unittest.TestCase):
         """Test whether file descriptors are closed properly.
 
         This test targets the following issue:
+
         `Pulp #4073 <https://pulp.plan.io/issues/4073>`_
 
         Do the following:
+
         1. Check if 'lsof' is installed. If it is not, skip this test.
         2. Create and sync a repo.
         3. Run the 'lsof' command to verify that files in the
@@ -102,25 +109,44 @@ class BasicSyncTestCase(unittest.TestCase):
         self.assertEqual(len(response), 0, response)
 
 
-class SyncInvalidURLTestCase(unittest.TestCase):
-    """Sync a repository with an invalid url on the Remote."""
+class SyncInvalidTestCase(unittest.TestCase):
+    """Sync a repository with a given url on the remote."""
 
-    def test_all(self):
+    @classmethod
+    def setUpClass(cls):
+        """Create class-wide variables."""
+        cls.cfg = config.get_config()
+        cls.client = api.Client(cls.cfg, api.json_handler)
+
+    def test_invalid_url(self):
+        """Sync a repository using a remote url that does not exist.
+
+        Test that we get a task failure. See :meth:`do_test`.
         """
-        Sync a repository using a Remote url that does not exist.
+        context = self.do_test('http://i-am-an-invalid-url.com/invalid/')
+        self.assertIsNotNone(context.exception.task['error']['description'])
 
-        Test that we get a task failure.
+    # Provide an invalid repository and specify keywords in the anticipated error message
+    @unittest.skip("FIXME: Plugin writer action required.")
+    def test_invalid_plugin_template_content(self):
+        """Sync a repository using an invalid plugin_content repository.
 
+        Assert that an exception is raised, and that error message has
+        keywords related to the reason of the failure. See :meth:`do_test`.
         """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+        context = self.do_test(GEM_INVALID_FIXTURE_URL)
+        for key in ('mismached', 'empty'):
+            self.assertIn(key, context.exception.task['error']['description'])
 
-        repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+    def do_test(self, url):
+        """Sync a repository given ``url`` on the remote."""
+        repo = self.client.post(REPO_PATH, gen_repo())
+        self.addCleanup(self.client.delete, repo['_href'])
 
-        body = gen_gem_remote(url="http://i-am-an-invalid-url.com/invalid/")
-        remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        body = gen_gem_remote(url=url)
+        remote = self.client.post(GEM_REMOTE_PATH, body)
+        self.addCleanup(self.client.delete, remote['_href'])
 
-        with self.assertRaises(exceptions.TaskReportError):
-            sync(cfg, remote, repo)
+        with self.assertRaises(TaskReportError) as context:
+            sync(self.cfg, remote, repo)
+        return context

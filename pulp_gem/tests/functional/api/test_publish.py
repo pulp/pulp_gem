@@ -91,6 +91,6 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         with self.assertRaises(HTTPError):
             body = {
                 'repository': repo['_href'],
-                'repository_version': non_latest
+                'repository_version': non_latest,
             }
             client.post(urljoin(publisher['_href'], 'publish/'), body)
