@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -veuo pipefail
 
-if [ "$TRAVIS_PULL_REQUEST" = "false" ]
+PULP_PR_NUMBER=
+PULP_PLUGIN_PR_NUMBER=
+if [ -f DONOTMERGE.requirements ]
 then
-  PULP_PR_NUMBER=
-  PULP_PLUGIN_PR_NUMBER=
-else
-  PR_MSG=$(http --json "https://api.github.com/repos/${TRAVIS_REPO_SLUG}/pulls/${TRAVIS_PULL_REQUEST}" "Accept:application/vnd.github.v3.text+json" | jq -r .body | tr -C "[:alnum:]-\n" =)
-  PULP_PR_NUMBER=$(echo $PR_MSG | sed -n 's/.*[Rr]equires.*pulp=pulp=[^0-9]*\([0-9]*\).*/\1/p')
-  PULP_PLUGIN_PR_NUMBER=$(echo $PR_MSG | sed -n 's/.*[Rr]equires.*pulp=pulpcore-plugin=[^0-9]*\([0-9]*\).*/\1/p')
+  source DONOTMERGE.requirements
 fi
 
 pip install -r test_requirements.txt
