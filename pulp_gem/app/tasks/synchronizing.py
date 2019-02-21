@@ -71,14 +71,11 @@ def synchronize(remote_pk, repository_pk, mirror):
     if not remote.url:
         raise ValueError(_('A remote must have a url specified to synchronize.'))
 
-    # Interpret policy to download Artifacts or not
-    download_artifacts = (remote.policy == Remote.IMMEDIATE)
     first_stage = GemFirstStage(remote)
     dv = GemDeclarativeVersion(
         first_stage,
         repository,
         mirror=mirror,
-        download_artifacts=download_artifacts,
     )
     dv.create()
 
@@ -102,6 +99,9 @@ class GemFirstStage(Stage):
         """
         Build and emit `DeclarativeContent` from the Spec data.
         """
+        # Interpret policy to download Artifacts or not
+        deferred_download = (self.remote.policy != Remote.IMMEDIATE)
+
         with ProgressBar(message='Downloading Metadata') as pb:
             parsed_url = urlparse(self.remote.url)
             root_dir = parsed_url.path
@@ -122,8 +122,20 @@ class GemFirstStage(Stage):
                 spec_path = os.path.join(root_dir, spec_relative_path)
                 spec_url = urlunparse(parsed_url._replace(path=spec_path))
                 gem = GemContent(name=key.name, version=key.version)
-                da_gem = DeclarativeArtifact(Artifact(), url, relative_path, self.remote)
-                da_spec = DeclarativeArtifact(Artifact(), spec_url, spec_relative_path, self.remote)
+                da_gem = DeclarativeArtifact(
+                    artifact=Artifact(),
+                    url=url,
+                    relative_path=relative_path,
+                    remote=self.remote,
+                    deferred_download=deferred_download,
+                )
+                da_spec = DeclarativeArtifact(
+                    artifact=Artifact(),
+                    url=spec_url,
+                    relative_path=spec_relative_path,
+                    remote=self.remote,
+                    deferred_download=deferred_download,
+                )
                 dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_spec])
                 pb.increment()
                 await self.put(dc)
@@ -137,9 +149,6 @@ class GemDeclarativeVersion(DeclarativeVersion):
     def pipeline_stages(self, new_version):
         """
         Build the list of pipeline stages feeding into the ContentUnitAssociation stage.
-
-        If the `self.download_artifacts` is False the pipeline will not include Artifact downloading
-        and saving stages.
 
         This is overwritten to create a custom pipeline.
 
@@ -155,14 +164,9 @@ class GemDeclarativeVersion(DeclarativeVersion):
             self.first_stage,
             QueryExistingContents(),
             UpdateExistingContentArtifacts(),
-        ]
-        if self.download_artifacts:
-            pipeline.extend([
-                ArtifactDownloader(),
-                ArtifactSaver(),
-            ])
-        pipeline.extend([
+            ArtifactDownloader(),
+            ArtifactSaver(),
             ContentSaver(),
             RemoteArtifactSaver(),
-        ])
+        ]
         return pipeline
