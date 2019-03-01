@@ -1,5 +1,6 @@
 from unittest.mock import patch
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from pulp_gem.app.serializers import GemContentSerializer
 
@@ -18,7 +19,8 @@ class TestGemContentSerializer(TestCase):
             sha256="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             sha384="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",  # noqa
             sha512="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",  # noqa
-            size=1024
+            size=1024,
+            file=SimpleUploadedFile('test_filename_a', b'test content_a'),
         )
         self.artifact2 = Artifact.objects.create(
             md5="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
@@ -27,7 +29,8 @@ class TestGemContentSerializer(TestCase):
             sha256="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             sha384="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",  # noqa
             sha512="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",  # noqa
-            size=1024
+            size=1024,
+            file=SimpleUploadedFile('test_filename_b', b'test content_b'),
         )
 
     @patch('pulp_gem.app.serializers._artifact_from_data')
