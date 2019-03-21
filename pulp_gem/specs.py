@@ -53,11 +53,11 @@ def _yaml_ruby_constructor(loader, suffix, node):
 yaml.add_multi_constructor(u'!ruby/object:', _yaml_ruby_constructor, Loader=yaml.SafeLoader)
 
 
-def analyse_gem(filename):
+def analyse_gem(file_obj):
     """
     Extract name, version and specdata from gemfile.
     """
-    with TarFile(filename, 'r') as archive:
+    with TarFile(fileobj=file_obj) as archive:
         with archive.extractfile('metadata.gz') as md_file:
             data = yaml.safe_load(gzip.decompress(md_file.read()))
     # Workaroud

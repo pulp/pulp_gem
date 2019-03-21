@@ -62,7 +62,7 @@ class GemContentSerializer(platform.MultipleArtifactContentSerializer):
                 detail={'_artifact': _('This field is required')},
             )
 
-        name, version, spec_data = analyse_gem(artifact.file.name)
+        name, version, spec_data = analyse_gem(artifact.file)
         relative_path = os.path.join('gems', name + '-' + version + '.gem')
 
         spec_artifact = _artifact_from_data(spec_data)
