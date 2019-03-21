@@ -44,8 +44,8 @@ Install ``pulp-gem`` from source
 3)  git clone https://github.com/ATIX-AG/pulp_gem
 4)  cd pulp\_gem
 5)  python setup.py develop
-6)  pulp-manager makemigrations pulp\_gem
-7)  pulp-manager migrate pulp\_gem
+6)  django-admin makemigrations pulp\_gem
+7)  django-admin migrate pulp\_gem
 8)  django-admin runserver
 9)  gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
 10) sudo systemctl restart pulp\_resource\_manager
@@ -58,8 +58,8 @@ Install ``pulp-gem`` From PyPI
 1) sudo -u pulp -i
 2) source ~/pulpvenv/bin/activate
 3) pip install pulp-gem
-4) pulp-manager makemigrations pulp\_gem
-5) pulp-manager migrate pulp\_gem
+4) django-admin makemigrations pulp\_gem
+5) django-admin migrate pulp\_gem
 6) django-admin runserver
 7) gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
 8) sudo systemctl restart pulp\_resource\_manager
