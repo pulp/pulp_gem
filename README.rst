@@ -46,8 +46,8 @@ Install ``pulp-gem`` from source
 5)  python setup.py develop
 6)  django-admin makemigrations pulp\_gem
 7)  django-admin migrate pulp\_gem
-8)  django-admin runserver
-9)  gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
+8)  django-admin runserver 24817
+9)  gunicorn pulpcore.content:server --bind 'localhost:24816' --worker-class 'aiohttp.GunicornWebWorker' -w 2
 10) sudo systemctl restart pulp\_resource\_manager
 11) sudo systemctl restart pulp\_worker@1
 12) sudo systemctl restart pulp\_worker@2
@@ -60,8 +60,8 @@ Install ``pulp-gem`` From PyPI
 3) pip install pulp-gem
 4) django-admin makemigrations pulp\_gem
 5) django-admin migrate pulp\_gem
-6) django-admin runserver
-7) gunicorn pulpcore.content:server --bind 'localhost:8080' --worker-class 'aiohttp.GunicornWebWorker' -w 2
+6) django-admin runserver 24817
+7) gunicorn pulpcore.content:server --bind 'localhost:24816' --worker-class 'aiohttp.GunicornWebWorker' -w 2
 8) sudo systemctl restart pulp\_resource\_manager
 9) sudo systemctl restart pulp\_worker@1
 10) sudo systemctl restart pulp\_worker@2
@@ -69,7 +69,7 @@ Install ``pulp-gem`` From PyPI
 Create a repository ``foo``
 ---------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/repositories/ name=foo``
+``$ http POST http://localhost:24817/pulp/api/v3/repositories/ name=foo``
 
 .. code:: json
 
@@ -78,12 +78,12 @@ Create a repository ``foo``
         "...": "..."
     }
 
-``$ export REPO_HREF=$(http :8000/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
 
 Add a remote
 ------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/' policy='streamed'``
+``$ http POST http://localhost:24817/pulp/api/v3/remotes/gem/ name='bar' url='https://rubygems.org/' policy='streamed'``
 
 .. code:: json
 
@@ -92,19 +92,19 @@ Add a remote
         "..." : "..."
     }
 
-``$ export REMOTE_HREF=$(http :8000/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
 
-``$ http POST ':8000'${REMOTE_HREF}'sync/' repository=$REPO_HREF``
+``$ http POST ':24817'${REMOTE_HREF}'sync/' repository=$REPO_HREF``
 
 Upload ``foo-0.0.1.gem`` to Pulp
 --------------------------------
 
 Create an Artifact by uploading the gemfile to Pulp.
 
-``$ http --form POST http://localhost:8000/pulp/api/v3/artifacts/ file@./foo-0.0.1.gem``
+``$ http --form POST http://localhost:24817/pulp/api/v3/artifacts/ file@./foo-0.0.1.gem``
 
 .. code:: json
 
@@ -118,7 +118,7 @@ You need to upload the corresponding ``foo-0.0.1.gemspec.rz`` in the same way.
 Create ``gem`` content from an Artifact
 ---------------------------------------
 
-``$ http POST http://localhost:8000/pulp/api/v3/content/gem/gems/ _artifact="/pulp/api/v3/artifacts/1/"``
+``$ http POST http://localhost:24817/pulp/api/v3/content/gem/gems/ _artifact="/pulp/api/v3/artifacts/1/"``
 
 .. code:: json
 
@@ -134,4 +134,4 @@ Create ``gem`` content from an Artifact
         "version": "0.0.1"
     }
 
-``$ export CONTENT_HREF=$(http :8000/pulp/api/v3/content/gem/gems/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/gem/gems/ | jq -r '.results[] | select(.name == "foo") | ._href')``
