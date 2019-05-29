@@ -8,10 +8,7 @@ from pulp_smash import api, config, utils
 from pulp_smash.pulp3.constants import ARTIFACTS_PATH
 from pulp_smash.pulp3.utils import delete_orphans
 
-from pulp_gem.tests.functional.constants import (
-    GEM_URL,
-    GEM_CONTENT_PATH,
-)
+from pulp_gem.tests.functional.constants import GEM_CONTENT_PATH, GEM_URL
 from pulp_gem.tests.functional.utils import (
     gen_gem_content_attrs,
     gen_gem_content_verify_attrs,
@@ -37,7 +34,7 @@ class ContentUnitTestCase(unittest.TestCase):
         delete_orphans(cls.cfg)
         cls.content_unit = {}
         cls.client = api.Client(cls.cfg, api.json_handler)
-        files = {'file': utils.http_get(GEM_URL)}
+        files = {"file": utils.http_get(GEM_URL)}
         cls.artifact = cls.client.post(ARTIFACTS_PATH, files=files)
 
     @classmethod
@@ -48,33 +45,35 @@ class ContentUnitTestCase(unittest.TestCase):
     def test_01_create_content_unit(self):
         """Create content unit."""
         attrs = gen_gem_content_attrs(self.artifact)
-        self.content_unit.update(self.client.post(GEM_CONTENT_PATH, attrs))
+        call_report = self.client.post(GEM_CONTENT_PATH, data=attrs)
+        created_resources = next(api.poll_spawned_tasks(self.cfg, call_report))["created_resources"]
+        self.content_unit.update(self.client.get(created_resources[0]))
         attrs = gen_gem_content_verify_attrs(self.artifact)
         for key, val in attrs.items():
             with self.subTest(key=key):
                 self.assertEqual(self.content_unit[key], val)
 
-    @skip_if(bool, 'content_unit', False)
+    @skip_if(bool, "content_unit", False)
     def test_02_read_content_unit(self):
         """Read a content unit by its href."""
-        content_unit = self.client.get(self.content_unit['_href'])
+        content_unit = self.client.get(self.content_unit["_href"])
         for key, val in self.content_unit.items():
             with self.subTest(key=key):
                 self.assertEqual(content_unit[key], val)
 
-    @skip_if(bool, 'content_unit', False)
+    @skip_if(bool, "content_unit", False)
     def test_02_read_content_units(self):
-        """Read a content unit by its relative_path."""
-        page = self.client.get(GEM_CONTENT_PATH, params={
-            'name': self.content_unit['name'],
-            'version': self.content_unit['version'],
-        })
-        self.assertEqual(len(page['results']), 1)
+        """Read a content unit by its name and version."""
+        page = self.client.get(
+            GEM_CONTENT_PATH,
+            params={"name": self.content_unit["name"], "version": self.content_unit["version"]},
+        )
+        self.assertEqual(len(page["results"]), 1)
         for key, val in self.content_unit.items():
             with self.subTest(key=key):
-                self.assertEqual(page['results'][0][key], val)
+                self.assertEqual(page["results"][0][key], val)
 
-    @skip_if(bool, 'content_unit', False)
+    @skip_if(bool, "content_unit", False)
     def test_03_partially_update(self):
         """Attempt to update a content unit using HTTP PATCH.
 
@@ -82,10 +81,10 @@ class ContentUnitTestCase(unittest.TestCase):
         """
         attrs = gen_gem_content_attrs(self.artifact)
         with self.assertRaises(HTTPError) as exc:
-            self.client.patch(self.content_unit['_href'], attrs)
+            self.client.patch(self.content_unit["_href"], attrs)
         self.assertEqual(exc.exception.response.status_code, 405)
 
-    @skip_if(bool, 'content_unit', False)
+    @skip_if(bool, "content_unit", False)
     def test_03_fully_update(self):
         """Attempt to update a content unit using HTTP PUT.
 
@@ -93,15 +92,15 @@ class ContentUnitTestCase(unittest.TestCase):
         """
         attrs = gen_gem_content_attrs(self.artifact)
         with self.assertRaises(HTTPError) as exc:
-            self.client.put(self.content_unit['_href'], attrs)
+            self.client.put(self.content_unit["_href"], attrs)
         self.assertEqual(exc.exception.response.status_code, 405)
 
-    @skip_if(bool, 'content_unit', False)
+    @skip_if(bool, "content_unit", False)
     def test_04_delete(self):
         """Attempt to delete a content unit using HTTP DELETE.
 
         This HTTP method is not supported and a HTTP exception is expected.
         """
         with self.assertRaises(HTTPError) as exc:
-            self.client.delete(self.content_unit['_href'])
+            self.client.delete(self.content_unit["_href"])
         self.assertEqual(exc.exception.response.status_code, 405)

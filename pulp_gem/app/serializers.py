@@ -2,115 +2,175 @@ from gettext import gettext as _
 
 import os
 
-from rest_framework import serializers
+from rest_framework.serializers import (
+    CharField,
+    ChoiceField,
+    FileField,
+    HyperlinkedRelatedField,
+    ValidationError,
+)
 
 from pulpcore.app.files import PulpTemporaryUploadedFile
-from pulpcore.plugin import serializers as platform
+from pulpcore.plugin.models import Artifact, Remote, Repository, RepositoryVersion
+from pulpcore.plugin.serializers import (
+    ArtifactSerializer,
+    MultipleArtifactContentSerializer,
+    SingleContentArtifactField,
+    PublicationSerializer,
+    PublicationDistributionSerializer,
+    RemoteSerializer,
+)
 
-from . import models
+from .models import GemContent, GemDistribution, GemPublication, GemRemote
 
 from ..specs import analyse_gem
 
 
 def _artifact_from_data(raw_data):
     tmpfile = PulpTemporaryUploadedFile(
-        "tmpfile",
-        "application/octet-stream",
-        len(raw_data),
-        "",
-        "",
+        "tmpfile", "application/octet-stream", len(raw_data), "", ""
     )
     tmpfile.write(raw_data)
 
-    artifact_serializer = platform.ArtifactSerializer(data={'file': tmpfile})
+    artifact_serializer = ArtifactSerializer(data={"file": tmpfile})
     artifact_serializer.is_valid(raise_exception=True)
 
     return artifact_serializer.save()
 
 
-class GemContentSerializer(platform.MultipleArtifactContentSerializer):
+class GemContentSerializer(MultipleArtifactContentSerializer):
     """
     A Serializer for GemContent.
     """
 
-    _artifact = platform.SingleContentArtifactField(
-        help_text=_('Artifact file representing the physical content'),
+    artifact = SingleContentArtifactField(
+        help_text=_("Artifact file representing the physical content"),
+        required=False,
         write_only=True,
     )
-    name = serializers.CharField(
-        help_text=_('Name of the gem'),
-        read_only=True,
+    file = FileField(
+        help_text=_(
+            "An uploaded file that should be turned into the artifact of the content unit."
+        ),
+        required=False,
+        write_only=True,
     )
-    version = serializers.CharField(
-        help_text=_('Version of the gem'),
-        read_only=True,
+    repository = HyperlinkedRelatedField(
+        help_text=_("A URI of a repository the new content unit should be associated with."),
+        required=False,
+        write_only=True,
+        queryset=Repository.objects.all(),
+        view_name="repositories-detail",
     )
+    name = CharField(help_text=_("Name of the gem"), read_only=True)
+    version = CharField(help_text=_("Version of the gem"), read_only=True)
 
     def __init__(self, *args, **kwargs):
         """Initializer for GemContentSerializer."""
         super().__init__(*args, **kwargs)
-        self.fields['_artifacts'].read_only = True
+        self.fields["artifacts"].read_only = True
 
     def validate(self, data):
         """Validate the GemContent data."""
         data = super().validate(data)
 
-        try:
-            artifact = data.pop('_artifact')
-        except KeyError:
-            raise serializers.ValidationError(
-                detail={'_artifact': _('This field is required')},
-            )
+        if "file" in data:
+            if "artifact" in data:
+                raise ValidationError(_("Only one of 'file' and 'artifact' may be specified."))
+            data["artifact"] = Artifact.init_and_validate(data.pop("file"))
+        elif "artifact" not in data:
+            raise ValidationError(_("One of 'file' and 'artifact' must be specified."))
 
-        name, version, spec_data = analyse_gem(artifact.file)
-        relative_path = os.path.join('gems', name + '-' + version + '.gem')
-
-        spec_artifact = _artifact_from_data(spec_data)
-        spec_relative_path = os.path.join('quick/Marshal.4.8', name + '-' + version + '.gemspec.rz')
-
-        data['name'] = name
-        data['version'] = version
-        data['_artifacts'] = {
-            relative_path: artifact,
-            spec_relative_path: spec_artifact,
-        }
-
-        # Validate uniqueness
-        content = models.GemContent.objects.filter(
-            name=name,
-            version=version,
-        )
-        if content.exists():
-            raise serializers.ValidationError(_(
-                "There is already a gem content with name '{name}' and version '{version}'."
-            ).format(name=name, version=version))
+        if "request" not in self.context:
+            data = self.deferred_validate(data)
 
         return data
 
+    def deferred_validate(self, data):
+        """Validate the GemContent data (deferred)."""
+        artifact = data.pop("artifact")
+
+        name, version, spec_data = analyse_gem(artifact.file)
+        relative_path = os.path.join("gems", name + "-" + version + ".gem")
+
+        spec_artifact = _artifact_from_data(spec_data)
+        spec_relative_path = os.path.join("quick/Marshal.4.8", name + "-" + version + ".gemspec.rz")
+
+        data["name"] = name
+        data["version"] = version
+        data["artifacts"] = {relative_path: artifact, spec_relative_path: spec_artifact}
+
+        # Validate uniqueness
+        content = GemContent.objects.filter(name=name, version=version)
+        if content.exists():
+            raise ValidationError(
+                _(
+                    "There is already a gem content with name '{name}' and version '{version}'."
+                ).format(name=name, version=version)
+            )
+
+        return data
+
+    def create(self, validated_data):
+        """Save the GemContent unit.
+
+        This must be used inside a task that locks on the Artifact and if given, the repository.
+        """
+
+        repository = validated_data.pop("repository", None)
+        content = super().create(validated_data)
+
+        if repository:
+            content_to_add = self.Meta.model.objects.filter(pk=content.pk)
+
+            # create new repo version with uploaded package
+            with RepositoryVersion.create(repository) as new_version:
+                new_version.add_content(content_to_add)
+        return content
+
     class Meta:
-        fields = platform.MultipleArtifactContentSerializer.Meta.fields + (
-            '_artifact',
-            'name',
-            'version',
+        fields = MultipleArtifactContentSerializer.Meta.fields + (
+            "artifact",
+            "file",
+            "repository",
+            "name",
+            "version",
         )
-        model = models.GemContent
+        model = GemContent
 
 
-class GemRemoteSerializer(platform.RemoteSerializer):
+class GemRemoteSerializer(RemoteSerializer):
     """
     A Serializer for GemRemote.
     """
 
-    class Meta:
-        fields = platform.RemoteSerializer.Meta.fields
-        model = models.GemRemote
-
-
-class GemPublisherSerializer(platform.PublisherSerializer):
-    """
-    A Serializer for GemPublisher.
-    """
+    policy = ChoiceField(
+        help_text="The policy to use when downloading content. The possible values include: "
+        "'immediate', 'on_demand', and 'streamed'. 'immediate' is the default.",
+        choices=Remote.POLICY_CHOICES,
+        default=Remote.IMMEDIATE,
+    )
 
     class Meta:
-        fields = platform.PublisherSerializer.Meta.fields
-        model = models.GemPublisher
+        fields = RemoteSerializer.Meta.fields
+        model = GemRemote
+
+
+class GemPublicationSerializer(PublicationSerializer):
+    """
+    A Serializer for GemPublication.
+    """
+
+    class Meta:
+        fields = PublicationSerializer.Meta.fields
+        model = GemPublication
+
+
+class GemDistributionSerializer(PublicationDistributionSerializer):
+    """
+    A Serializer for GemDistribution.
+    """
+
+    class Meta:
+        fields = PublicationDistributionSerializer.Meta.fields
+        model = GemDistribution

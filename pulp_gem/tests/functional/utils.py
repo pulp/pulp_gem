@@ -6,7 +6,6 @@ from unittest import SkipTest
 from pulp_smash import api, selectors
 from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import (
-    gen_publisher,
     gen_remote,
     gen_repo,
     get_content,
@@ -19,6 +18,7 @@ from pulp_gem.tests.functional.constants import (
     GEM_CONTENT_NAME,
     GEM_CONTENT_PATH,
     GEM_FIXTURE_URL,
+    GEM_PUBLICATION_PATH,
     GEM_REMOTE_PATH,
 )
 
@@ -26,7 +26,7 @@ from pulp_gem.tests.functional.constants import (
 def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp_gem isn't installed."""
     require_pulp_3(SkipTest)
-    require_pulp_plugins({'pulp_gem'}, SkipTest)
+    require_pulp_plugins({"pulp_gem"}, SkipTest)
 
 
 def gen_gem_remote(url=GEM_FIXTURE_URL, **kwargs):
@@ -37,14 +37,6 @@ def gen_gem_remote(url=GEM_FIXTURE_URL, **kwargs):
     return gen_remote(url, **kwargs)
 
 
-def gen_gem_publisher(**kwargs):
-    """Return a semi-random dict for use in creating a gem Publisher.
-
-    :param url: The URL of an external content source.
-    """
-    return gen_publisher(**kwargs)
-
-
 def get_gem_content_paths(repo, version_href=None):
     """Return the relative path of content units present in a gem repository.
 
@@ -52,29 +44,33 @@ def get_gem_content_paths(repo, version_href=None):
     :param version_href: The repository version to read.
     :returns: A list with the paths of units present in a given repository.
     """
+    # FIXME: The "relative_path" is actually a file path and name
+    # It's just an example -- this needs to be replaced with an implementation that works
+    # for repositories of this content type.
     return [
-        "gems/{}-{}.gem".format(content_unit['name'], content_unit['version'])
-        for content_unit in get_content(repo)[GEM_CONTENT_NAME]
+        "gems/{name}-{version}.gem".format(**content_unit)
+        for content_unit in get_content(repo, version_href)[GEM_CONTENT_NAME]
     ]
 
 
 def gen_gem_content_attrs(artifact):
-    """Generate a dict with content unit attributes for create.
+    """Generate a dict with content unit attributes.
 
     :param artifact: A dict of info about the artifact.
     :returns: A semi-random dict for use in creating a content unit.
     """
-    return {'_artifact': artifact['_href']}
+    # FIXME: Add content specific metadata here.
+    return {"artifact": artifact["_href"]}
 
 
 def gen_gem_content_verify_attrs(artifact):
-    """Generate a dict with content unit attributes for verification.
+    """Generate a dict with content unit attributes.
 
-    :param: artifact: A dict of info about the artifact.
-    :returns: A dict for use in verifying a content unit.
+    :param artifact: A dict of info about the artifact.
+    :returns: A semi-random dict for use in creating a content unit.
     """
-    # TODO get more information about that file
-    return {'_type': GEM_CONTENT_NAME}
+    # FIXME: Add content specific metadata here.
+    return {}
 
 
 def populate_pulp(cfg, url=GEM_FIXTURE_URL):
@@ -83,7 +79,7 @@ def populate_pulp(cfg, url=GEM_FIXTURE_URL):
     :param pulp_smash.config.PulpSmashConfig: Information about a Pulp application.
     :param url: The gem repository URL. Defaults to
         :data:`pulp_smash.constants.GEM_FIXTURE_URL`
-    :returns: A list of dicts, where each dict describes one file content in Pulp.
+    :returns: A list of dicts, where each dict describes one gem content in Pulp.
     """
     client = api.Client(cfg, api.json_handler)
     remote = {}
@@ -94,13 +90,34 @@ def populate_pulp(cfg, url=GEM_FIXTURE_URL):
         sync(cfg, remote, repo)
     finally:
         if remote:
-            client.delete(remote['_href'])
+            client.delete(remote["_href"])
         if repo:
-            client.delete(repo['_href'])
-    return client.get(GEM_CONTENT_PATH)['results']
+            client.delete(repo["_href"])
+    return client.get(GEM_CONTENT_PATH)["results"]
 
 
-skip_if = partial(selectors.skip_if, exc=SkipTest)
+def create_gem_publication(cfg, repo, version_href=None):
+    """Create a gem publication.
+
+    :param pulp_smash.config.PulpSmashConfig cfg: Information about the Pulp
+        host.
+    :param repo: A dict of information about the repository.
+    :param version_href: A href for the repo version to be published.
+    :returns: A publication. A dict of information about the just created
+        publication.
+    """
+    if version_href:
+        body = {"repository_version": version_href}
+    else:
+        body = {"repository": repo["_href"]}
+
+    client = api.Client(cfg, api.json_handler)
+    call_report = client.post(GEM_PUBLICATION_PATH, body)
+    tasks = tuple(api.poll_spawned_tasks(cfg, call_report))
+    return client.get(tasks[-1]["created_resources"][0])
+
+
+skip_if = partial(selectors.skip_if, exc=SkipTest)  # pylint:disable=invalid-name
 """The ``@skip_if`` decorator, customized for unittest.
 
 :func:`pulp_smash.selectors.skip_if` is test runner agnostic. This function is

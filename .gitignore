@@ -1,46 +1,106 @@
-*svn*
-*.ipynb
-*.pyc
-*.pyo
-.project
-.pydevproject
-*.swp
-*.swo
-build
-dist
-*.egg-info
-.settings
-*.wpr
-*.wpu
-.idea
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
 .coverage
-cover
-.DS_Store
-*,cover
-tags
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
 
-# KDevelop
-.kdev4/
-*.kdev4
+# Translations
+*.mo
+*.pot
 
-# Ninja IDE
-*.nja
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
 
-# Sublime
-.codeintel
+# Flask stuff:
+instance/
+.webassets-cache
 
-# Rope
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
 .ropeproject
 
-# Vagrant
-.vagrant
-Vagrantfile
+# mkdocs documentation
+/site
 
-# Built documentation
-docs/_build
-docs/_diagrams
+# mypy
+.mypy_cache/
 
-# Django migrations
-# Ignored during early development to prevent accidental commits;
-# we'll want these to not be ignored when releasing pulp 3.0
-pulp_gem/app/migrations
+# Editors
+.vscode/
+.idea/
+

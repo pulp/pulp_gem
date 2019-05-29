@@ -6,24 +6,18 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import DISTRIBUTION_PATH, REPO_PATH
-from pulp_smash.pulp3.utils import (
-    download_content_unit,
-    gen_distribution,
-    gen_repo,
-    publish,
-    sync,
-)
+from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES, REPO_PATH
+from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo, sync
 
+from pulp_gem.tests.functional.constants import (
+    GEM_DISTRIBUTION_PATH,
+    GEM_FIXTURE_URL,
+    GEM_REMOTE_PATH,
+)
 from pulp_gem.tests.functional.utils import (
-    gen_gem_publisher,
+    create_gem_publication,
     gen_gem_remote,
     get_gem_content_paths,
-)
-from pulp_gem.tests.functional.constants import (
-    GEM_FIXTURE_URL,
-    GEM_PUBLISHER_PATH,
-    GEM_REMOTE_PATH,
 )
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
@@ -31,7 +25,27 @@ from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa
 class DownloadContentTestCase(unittest.TestCase):
     """Verify whether content served by pulp can be downloaded."""
 
-    def test_all(self):
+    def test_immediate(self):
+        """Download content from Pulp. Content is synced with immediate.
+
+        See :meth:`do_test`.
+        """
+        self.do_test("immediate")
+
+    def test_on_demand_download_policies(self):
+        """Download content from Pulp. Content is synced with an On-Demand policy.
+
+        See :meth:`do_test`.
+
+        This test targets the following issue:
+
+        `Pulp #4496 <https://pulp.plan.io/issues/4496>`_
+        """
+        for policy in ON_DEMAND_DOWNLOAD_POLICIES:
+            with self.subTest(policy):
+                self.do_test(policy)
+
+    def do_test(self, policy):
         """Verify whether content served by pulp can be downloaded.
 
         The process of publishing content is more involved in Pulp 3 than it
@@ -61,31 +75,24 @@ class DownloadContentTestCase(unittest.TestCase):
         client = api.Client(cfg, api.json_handler)
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, repo["_href"])
 
         body = gen_gem_remote()
         remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        self.addCleanup(client.delete, remote["_href"])
 
         sync(cfg, remote, repo)
-        repo = client.get(repo['_href'])
-
-        # Create a publisher.
-        publisher = client.post(GEM_PUBLISHER_PATH, gen_gem_publisher())
-        self.addCleanup(client.delete, publisher['_href'])
+        repo = client.get(repo["_href"])
 
         # Create a publication.
-        publication = publish(cfg, publisher, repo)
-        self.addCleanup(client.delete, publication['_href'])
+        publication = create_gem_publication(cfg, repo)
+        self.addCleanup(client.delete, publication["_href"])
 
         # Create a distribution.
         body = gen_distribution()
-        body['publication'] = publication['_href']
-        response_dict = client.post(DISTRIBUTION_PATH, body)
-        dist_task = client.get(response_dict['task'])
-        distribution_href = dist_task['created_resources'][0]
-        distribution = client.get(distribution_href)
-        self.addCleanup(client.delete, distribution['_href'])
+        body["publication"] = publication["_href"]
+        distribution = client.using_handler(api.task_handler).post(GEM_DISTRIBUTION_PATH, body)
+        self.addCleanup(client.delete, distribution["_href"])
 
         # Pick a content unit, and download it from both Pulp Fixtures…
         unit_path = choice(get_gem_content_paths(repo))

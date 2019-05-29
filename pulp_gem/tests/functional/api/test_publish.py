@@ -2,29 +2,19 @@
 """Tests that publish gem plugin repositories."""
 import unittest
 from random import choice
-from urllib.parse import urljoin
 
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
 from pulp_smash.pulp3.constants import REPO_PATH
-from pulp_smash.pulp3.utils import (
-    gen_repo,
-    get_content,
-    get_versions,
-    publish,
-    sync,
-)
+from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, sync
 
-from pulp_gem.tests.functional.utils import (
-    gen_gem_remote,
-    gen_gem_publisher,
-)
 from pulp_gem.tests.functional.constants import (
     GEM_CONTENT_NAME,
+    GEM_PUBLICATION_PATH,
     GEM_REMOTE_PATH,
-    GEM_PUBLISHER_PATH,
 )
+from pulp_gem.tests.functional.utils import create_gem_publication, gen_gem_remote
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
 
 
@@ -55,42 +45,33 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
 
         body = gen_gem_remote()
         remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote['_href'])
+        self.addCleanup(client.delete, remote["_href"])
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo['_href'])
+        self.addCleanup(client.delete, repo["_href"])
 
         sync(cfg, remote, repo)
 
-        publisher = client.post(GEM_PUBLISHER_PATH, gen_gem_publisher())
-        self.addCleanup(client.delete, publisher['_href'])
-
         # Step 1
-        repo = client.get(repo['_href'])
+        repo = client.get(repo["_href"])
         for gem_content in get_content(repo)[GEM_CONTENT_NAME]:
-            client.post(
-                repo['_versions_href'],
-                {'add_content_units': [gem_content['_href']]}
-            )
-        version_hrefs = tuple(ver['_href'] for ver in get_versions(repo))
+            client.post(repo["_versions_href"], {"add_content_units": [gem_content["_href"]]})
+        version_hrefs = tuple(ver["_href"] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
-        publication = publish(cfg, publisher, repo)
+        publication = create_gem_publication(cfg, repo)
 
         # Step 3
-        self.assertEqual(publication['repository_version'], version_hrefs[-1])
+        self.assertEqual(publication["repository_version"], version_hrefs[-1])
 
         # Step 4
-        publication = publish(cfg, publisher, repo, non_latest)
+        publication = create_gem_publication(cfg, repo, non_latest)
 
         # Step 5
-        self.assertEqual(publication['repository_version'], non_latest)
+        self.assertEqual(publication["repository_version"], non_latest)
 
         # Step 6
         with self.assertRaises(HTTPError):
-            body = {
-                'repository': repo['_href'],
-                'repository_version': non_latest,
-            }
-            client.post(urljoin(publisher['_href'], 'publish/'), body)
+            body = {"repository": repo["_href"], "repository_version": non_latest}
+            client.post(GEM_PUBLICATION_PATH, body)

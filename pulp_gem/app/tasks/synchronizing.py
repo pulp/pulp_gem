@@ -4,7 +4,7 @@ import os
 from gettext import gettext as _
 from urllib.parse import urlparse, urlunparse
 
-from pulpcore.plugin.models import Artifact, ProgressBar, Remote, Repository
+from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
     DeclarativeContent,
@@ -47,8 +47,10 @@ class UpdateExistingContentArtifacts(Stage):
             if d_content.content.pk is not None:
                 for d_artifact in d_content.d_artifacts:
                     content_artifact = d_content.content.contentartifact_set.get(
-                        relative_path=d_artifact.relative_path)
-                    d_artifact.artifact = content_artifact.artifact
+                        relative_path=d_artifact.relative_path
+                    )
+                    if content_artifact.artifact is not None:
+                        d_artifact.artifact = content_artifact.artifact
             await self.put(d_content)
 
 
@@ -69,14 +71,10 @@ def synchronize(remote_pk, repository_pk, mirror):
     repository = Repository.objects.get(pk=repository_pk)
 
     if not remote.url:
-        raise ValueError(_('A remote must have a url specified to synchronize.'))
+        raise ValueError(_("A remote must have a url specified to synchronize."))
 
     first_stage = GemFirstStage(remote)
-    dv = GemDeclarativeVersion(
-        first_stage,
-        repository,
-        mirror=mirror,
-    )
+    dv = GemDeclarativeVersion(first_stage, repository, mirror=mirror)
     dv.create()
 
 
@@ -100,25 +98,26 @@ class GemFirstStage(Stage):
         Build and emit `DeclarativeContent` from the Spec data.
         """
         # Interpret policy to download Artifacts or not
-        deferred_download = (self.remote.policy != Remote.IMMEDIATE)
+        deferred_download = self.remote.policy != Remote.IMMEDIATE
 
-        with ProgressBar(message='Downloading Metadata') as pb:
+        with ProgressReport(message="Downloading Metadata") as progress:
             parsed_url = urlparse(self.remote.url)
             root_dir = parsed_url.path
-            specs_path = os.path.join(root_dir, 'specs.4.8.gz')
+            specs_path = os.path.join(root_dir, "specs.4.8.gz")
             specs_url = urlunparse(parsed_url._replace(path=specs_path))
             downloader = self.remote.get_downloader(url=specs_url)
             result = await downloader.run()
-            pb.increment()
+            progress.increment()
 
-        with ProgressBar(message='Parsing Metadata') as pb:
+        with ProgressReport(message="Parsing Metadata") as progress:
             for key in read_specs(result.path):
-                relative_path = os.path.join('gems', key.name + '-' + key.version + '.gem')
+                relative_path = os.path.join("gems", key.name + "-" + key.version + ".gem")
                 path = os.path.join(root_dir, relative_path)
                 url = urlunparse(parsed_url._replace(path=path))
 
-                spec_relative_path = os.path.join('quick/Marshal.4.8',
-                                                  key.name + '-' + key.version + '.gemspec.rz')
+                spec_relative_path = os.path.join(
+                    "quick/Marshal.4.8", key.name + "-" + key.version + ".gemspec.rz"
+                )
                 spec_path = os.path.join(root_dir, spec_relative_path)
                 spec_url = urlunparse(parsed_url._replace(path=spec_path))
                 gem = GemContent(name=key.name, version=key.version)
@@ -137,7 +136,7 @@ class GemFirstStage(Stage):
                     deferred_download=deferred_download,
                 )
                 dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_spec])
-                pb.increment()
+                progress.increment()
                 await self.put(dc)
 
 
