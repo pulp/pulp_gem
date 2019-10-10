@@ -74,11 +74,11 @@ Create a repository ``foo``
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/repositories/1/",
+        "pulp_href": "/pulp/api/v3/repositories/1/",
         "...": "..."
     }
 
-``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export REPO_HREF=$(http :24817/pulp/api/v3/repositories/ | jq -r '.results[] | select(.name == "foo") | .pulp_href')``
 
 Add a remote
 ------------
@@ -88,11 +88,11 @@ Add a remote
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/remotes/gem/1/",
+        "pulp_href": "/pulp/api/v3/remotes/gem/1/",
         "..." : "..."
     }
 
-``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | ._href')``
+``$ export REMOTE_HREF=$(http :24817/pulp/api/v3/remotes/gem/ | jq -r '.results[] | select(.name == "bar") | .pulp_href')``
 
 Sync repository ``foo`` using remote ``bar``
 --------------------------------------------
@@ -109,7 +109,7 @@ Create an Artifact by uploading the gemfile to Pulp.
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/artifacts/1/",
+        "pulp_href": "/pulp/api/v3/artifacts/1/",
         "...": "..."
     }
 
@@ -123,7 +123,7 @@ Create ``gem`` content from an Artifact
 .. code:: json
 
     {
-        "_href": "/pulp/api/v3/content/gem/gems/1/",
+        "pulp_href": "/pulp/api/v3/content/gem/gems/1/",
         "_artifacts": {
             "gems/foo-0.0.1.gem":"/pulp/api/v3/artifacts/1/",
             "quick/Marshal.4.8/foo-0.0.1.gemspec.rz":"/pulp/api/v3/artifacts/2/"
@@ -134,4 +134,4 @@ Create ``gem`` content from an Artifact
         "version": "0.0.1"
     }
 
-``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/gem/gems/ | jq -r '.results[] | select(.name == "foo") | ._href')``
+``$ export CONTENT_HREF=$(http :24817/pulp/api/v3/content/gem/gems/ | jq -r '.results[] | select(.name == "foo") | .pulp_href')``

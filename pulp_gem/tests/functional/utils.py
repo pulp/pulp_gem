@@ -60,7 +60,7 @@ def gen_gem_content_attrs(artifact):
     :returns: A semi-random dict for use in creating a content unit.
     """
     # FIXME: Add content specific metadata here.
-    return {"artifact": artifact["_href"]}
+    return {"artifact": artifact["pulp_href"]}
 
 
 def gen_gem_content_verify_attrs(artifact):
@@ -90,9 +90,9 @@ def populate_pulp(cfg, url=GEM_FIXTURE_URL):
         sync(cfg, remote, repo)
     finally:
         if remote:
-            client.delete(remote["_href"])
+            client.delete(remote["pulp_href"])
         if repo:
-            client.delete(repo["_href"])
+            client.delete(repo["pulp_href"])
     return client.get(GEM_CONTENT_PATH)["results"]
 
 
@@ -109,7 +109,7 @@ def create_gem_publication(cfg, repo, version_href=None):
     if version_href:
         body = {"repository_version": version_href}
     else:
-        body = {"repository": repo["_href"]}
+        body = {"repository": repo["pulp_href"]}
 
     client = api.Client(cfg, api.json_handler)
     call_report = client.post(GEM_PUBLICATION_PATH, body)

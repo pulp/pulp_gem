@@ -45,18 +45,18 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
 
         body = gen_gem_remote()
         remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["_href"])
+        self.addCleanup(client.delete, remote["pulp_href"])
 
         repo = client.post(REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["_href"])
+        self.addCleanup(client.delete, repo["pulp_href"])
 
         sync(cfg, remote, repo)
 
         # Step 1
-        repo = client.get(repo["_href"])
+        repo = client.get(repo["pulp_href"])
         for gem_content in get_content(repo)[GEM_CONTENT_NAME]:
-            client.post(repo["_versions_href"], {"add_content_units": [gem_content["_href"]]})
-        version_hrefs = tuple(ver["_href"] for ver in get_versions(repo))
+            client.post(repo["_versions_href"], {"add_content_units": [gem_content["pulp_href"]]})
+        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 
         # Step 2
@@ -73,5 +73,5 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
 
         # Step 6
         with self.assertRaises(HTTPError):
-            body = {"repository": repo["_href"], "repository_version": non_latest}
+            body = {"repository": repo["pulp_href"], "repository_version": non_latest}
             client.post(GEM_PUBLICATION_PATH, body)
