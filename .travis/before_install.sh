@@ -19,12 +19,27 @@ if [ -f $PRE_BEFORE_INSTALL ]; then
     $PRE_BEFORE_INSTALL
 fi
 
-export PULP_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulpcore\/pull\/(\d+)' | awk -F'/' '{print $7}')
-export PULP_PLUGIN_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulpcore-plugin\/pull\/(\d+)' | awk -F'/' '{print $7}')
-export PULP_SMASH_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/PulpQE\/pulp-smash\/pull\/(\d+)' | awk -F'/' '{print $7}')
-export PULP_ROLES_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/ansible-pulp\/pull\/(\d+)' | awk -F'/' '{print $7}')
-export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
-export PULP_OPERATOR_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-operator\/pull\/(\d+)' | awk -F'/' '{print $7}')
+if [[ -n $(echo -e $COMMIT_MSG | grep -P "Required PR:.*" | grep -v "https") ]]; then
+  echo "Invalid Required PR link detected in commit message. Please use the full https url."
+  exit 1
+fi
+
+if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+then
+  export PULP_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulpcore\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_PLUGIN_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulpcore-plugin\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_SMASH_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/PulpQE\/pulp-smash\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_ROLES_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/ansible-pulp\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
+  export PULP_OPERATOR_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-operator\/pull\/(\d+)' | awk -F'/' '{print $7}')
+else
+  export PULP_PR_NUMBER=
+  export PULP_PLUGIN_PR_NUMBER=
+  export PULP_SMASH_PR_NUMBER=
+  export PULP_ROLES_PR_NUMBER=
+  export PULP_BINDINGS_PR_NUMBER=
+  export PULP_OPERATOR_PR_NUMBER=
+fi
 
 # test_requirements contains tools needed for flake8, etc.
 # So install them here rather than in install.sh
@@ -67,27 +82,32 @@ if [ -n "$PULP_PR_NUMBER" ]; then
 fi
 
 
-git clone --depth=1 https://github.com/pulp/pulpcore-plugin.git
+# When building a (release) tag, we don't need the development modules for the
+# build (they will be installed as dependencies of the plugin).
+if [ -z "$TRAVIS_TAG" ]; then
 
-if [ -n "$PULP_PLUGIN_PR_NUMBER" ]; then
-  cd pulpcore-plugin
-  git fetch --depth=1 origin +refs/pull/$PULP_PLUGIN_PR_NUMBER/merge
-  git checkout FETCH_HEAD
-  cd ..
+  git clone --depth=1 https://github.com/pulp/pulpcore-plugin.git
+
+  if [ -n "$PULP_PLUGIN_PR_NUMBER" ]; then
+    cd pulpcore-plugin
+    git fetch --depth=1 origin +refs/pull/$PULP_PLUGIN_PR_NUMBER/merge
+    git checkout FETCH_HEAD
+    cd ..
+  fi
+
+
+  git clone --depth=1 https://github.com/PulpQE/pulp-smash.git
+
+  if [ -n "$PULP_SMASH_PR_NUMBER" ]; then
+    cd pulp-smash
+    git fetch --depth=1 origin +refs/pull/$PULP_SMASH_PR_NUMBER/merge
+    git checkout FETCH_HEAD
+    cd ..
+  fi
+
+  # pulp-smash already got installed via test_requirements.txt
+  pip install --upgrade --force-reinstall ./pulp-smash
 fi
-
-
-git clone --depth=1 https://github.com/PulpQE/pulp-smash.git
-
-if [ -n "$PULP_SMASH_PR_NUMBER" ]; then
-  cd pulp-smash
-  git fetch --depth=1 origin +refs/pull/$PULP_SMASH_PR_NUMBER/merge
-  git checkout FETCH_HEAD
-  cd ..
-fi
-
-# pulp-smash already got installed via test_requirements.txt
-pip install --upgrade --force-reinstall ./pulp-smash
 
 pip install ansible
 

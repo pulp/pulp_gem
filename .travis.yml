@@ -50,4 +50,5 @@ after_failure:
 jobs:
   include:
 notifications: None
+
 ...
