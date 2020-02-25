@@ -4,13 +4,14 @@ import unittest
 
 from pulp_smash import api, cli, config
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import MEDIA_PATH, REPO_PATH
+from pulp_smash.pulp3.constants import MEDIA_PATH
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary, sync
 
 from pulp_gem.tests.functional.constants import (
     GEM_FIXTURE_SUMMARY,
     GEM_INVALID_FIXTURE_URL,
     GEM_REMOTE_PATH,
+    GEM_REPO_PATH,
 )
 from pulp_gem.tests.functional.utils import gen_gem_remote
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -45,7 +46,7 @@ class BasicSyncTestCase(unittest.TestCase):
         8. Assert that the same number of are present and that no units were
            added.
         """
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_gem_remote()
@@ -53,7 +54,7 @@ class BasicSyncTestCase(unittest.TestCase):
         self.addCleanup(self.client.delete, remote["pulp_href"])
 
         # Sync the repository.
-        self.assertIsNone(repo["latest_version_href"])
+        self.assertIsNotNone(repo["latest_version_href"])
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
@@ -66,9 +67,7 @@ class BasicSyncTestCase(unittest.TestCase):
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
-        self.assertNotEqual(latest_version_href, repo["latest_version_href"])
-        self.assertDictEqual(get_content_summary(repo), GEM_FIXTURE_SUMMARY)
-        self.assertDictEqual(get_added_content_summary(repo), {})
+        self.assertEqual(latest_version_href, repo["latest_version_href"])
 
     def test_file_decriptors(self):
         """Test whether file descriptors are closed properly.
@@ -91,7 +90,7 @@ class BasicSyncTestCase(unittest.TestCase):
         if cli_client.run(("which", "lsof")).returncode != 0:
             raise unittest.SkipTest("lsof package is not present")
 
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         remote = self.client.post(GEM_REMOTE_PATH, gen_gem_remote())
@@ -135,7 +134,7 @@ class SyncInvalidTestCase(unittest.TestCase):
 
     def do_test(self, url):
         """Sync a repository given ``url`` on the remote."""
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_gem_remote(url=url)

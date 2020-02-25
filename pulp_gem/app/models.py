@@ -2,10 +2,15 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, Publication, PublicationDistribution, Remote
+from pulpcore.plugin.models import (
+    Content,
+    Remote,
+    Repository,
+    Publication,
+    PublicationDistribution,
+)
 
-
-log = getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class GemContent(Content):
@@ -31,17 +36,6 @@ class GemContent(Content):
         unique_together = ("name", "version")
 
 
-class GemDistribution(PublicationDistribution):
-    """
-    A Distribution for GemContent.
-    """
-
-    TYPE = "gem"
-
-    class Meta:
-        default_related_name = "%(app_label)s_%(model_name)s"
-
-
 class GemPublication(Publication):
     """
     A Publication for GemContent.
@@ -56,6 +50,30 @@ class GemPublication(Publication):
 class GemRemote(Remote):
     """
     A Remote for GemContent.
+    """
+
+    TYPE = "gem"
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
+
+class GemRepository(Repository):
+    """
+    A Repository for GemContent.
+    """
+
+    TYPE = "gem"
+
+    CONTENT_TYPES = [GemContent]
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
+
+class GemDistribution(PublicationDistribution):
+    """
+    A Distribution for GemContent.
     """
 
     TYPE = "gem"

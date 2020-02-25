@@ -20,6 +20,8 @@ export FUNC_TEST_SCRIPT=$TRAVIS_BUILD_DIR/.travis/func_test_script.sh
 export DJANGO_SETTINGS_MODULE=pulpcore.app.settings
 
 if [ "$TEST" = 'docs' ]; then
+  
+
   cd docs
   make html
   cd ..
@@ -30,26 +32,25 @@ if [ "$TEST" = 'docs' ]; then
   exit
 fi
 
-if [ "$TEST" = 'bindings' ]; then
-  COMMIT_MSG=$(git log --format=%B --no-merges -1)
-  export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
+COMMIT_MSG=$(git log --format=%B --no-merges -1)
+export PULP_BINDINGS_PR_NUMBER=$(echo $COMMIT_MSG | grep -oP 'Required\ PR:\ https\:\/\/github\.com\/pulp\/pulp-openapi-generator\/pull\/(\d+)' | awk -F'/' '{print $7}')
 
-  cd ..
-  git clone https://github.com/pulp/pulp-openapi-generator.git
-  cd pulp-openapi-generator
+cd ../pulp-openapi-generator
+if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
+  git fetch origin pull/$PULP_BINDINGS_PR_NUMBER/head:$PULP_BINDINGS_PR_NUMBER
+  git checkout $PULP_BINDINGS_PR_NUMBER
+fi
 
-  if [ -n "$PULP_BINDINGS_PR_NUMBER" ]; then
-    git fetch origin +refs/pull/$PULP_BINDINGS_PR_NUMBER/merge
-    git checkout FETCH_HEAD
-  fi
-
-  ./generate.sh pulpcore python
-  pip install ./pulpcore-client
+./generate.sh pulpcore python
+pip install ./pulpcore-client
   ./generate.sh pulp_gem python
   pip install ./pulp_gem-client
 
-  python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
+cd $TRAVIS_BUILD_DIR
 
+if [ "$TEST" = 'bindings' ]; then
+  python $TRAVIS_BUILD_DIR/.travis/test_bindings.py
+  cd ../pulp-openapi-generator
   if [ ! -f $TRAVIS_BUILD_DIR/.travis/test_bindings.rb ]
   then
     exit
@@ -85,6 +86,9 @@ export CMD_STDIN_PREFIX="sudo kubectl exec -i $PULP_API_POD --"
 # The alias does not seem to work in Travis / the scripting framework
 #alias pytest="$CMD_PREFIX pytest"
 
+cat unittest_requirements.txt | $CMD_STDIN_PREFIX bash -c "cat > /tmp/test_requirements.txt"
+$CMD_PREFIX pip3 install -r /tmp/test_requirements.txt
+
 # Run unit tests.
 $CMD_PREFIX bash -c "PULP_DATABASES__default__USER=postgres django-admin test --noinput /usr/local/lib/python${TRAVIS_PYTHON_VERSION}/site-packages/pulp_gem/tests/unit/"
 
@@ -104,7 +108,11 @@ set -u
 
 if [[ "$TEST" == "performance" ]]; then
   echo "--- Performance Tests ---"
-  pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_gem.tests.performance || show_logs_and_return_non_zero
+  if [[ -z ${PERFORMANCE_TEST+x} ]]; then
+    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_gem.tests.performance || show_logs_and_return_non_zero
+  else
+    pytest -vv -r sx --color=yes --pyargs --capture=no --durations=0 pulp_gem.tests.performance.test_$PERFORMANCE_TEST || show_logs_and_return_non_zero
+  fi
   exit
 fi
 

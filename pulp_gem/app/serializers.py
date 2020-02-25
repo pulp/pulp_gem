@@ -19,9 +19,10 @@ from pulpcore.plugin.serializers import (
     PublicationSerializer,
     PublicationDistributionSerializer,
     RemoteSerializer,
+    RepositorySerializer,
 )
 
-from .models import GemContent, GemDistribution, GemPublication, GemRemote
+from .models import GemContent, GemDistribution, GemPublication, GemRemote, GemRepository
 
 from ..specs import analyse_gem
 
@@ -116,7 +117,6 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
 
         This must be used inside a task that locks on the Artifact and if given, the repository.
         """
-
         repository = validated_data.pop("repository", None)
         content = super().create(validated_data)
 
@@ -154,6 +154,16 @@ class GemRemoteSerializer(RemoteSerializer):
     class Meta:
         fields = RemoteSerializer.Meta.fields
         model = GemRemote
+
+
+class GemRepositorySerializer(RepositorySerializer):
+    """
+    A Serializer for GemRepository.
+    """
+
+    class Meta:
+        fields = RepositorySerializer.Meta.fields
+        model = GemRepository
 
 
 class GemPublicationSerializer(PublicationSerializer):

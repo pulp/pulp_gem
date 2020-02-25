@@ -4,12 +4,14 @@
 additional_plugins: []
 black: true
 check_commit_message: false
+cherry_pick_automation: false
 coverage: false
 deploy_client_to_pypi: false
 deploy_client_to_rubygems: false
 deploy_daily_client_to_pypi: false
 deploy_daily_client_to_rubygems: false
 deploy_to_pypi: false
+docker_fixtures: false
 docs_test: true
 plugin_app_label: gem
 plugin_camel: PulpGem
@@ -20,9 +22,14 @@ plugin_dash: pulp-gem
 plugin_dash_short: gem
 plugin_name: pulp_gem
 plugin_snake: pulp_gem
+pulp_settings: null
+pulpcore_branch: master
+pulpcore_pip_version_specifier: null
 pydocstyle: true
 pypi_username: None
+stable_branch: null
 test_bindings: false
 test_performance: false
+travis_addtl_services: []
 travis_notifications: None
 

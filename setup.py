@@ -2,7 +2,7 @@
 
 from setuptools import find_packages, setup
 
-requirements = ["packaging", "pulpcore-plugin~=0.1rc4", "rubymarshal==1.0.3"]
+requirements = ["packaging", "pulpcore>=3.2.0dev", "rubymarshal==1.0.3"]
 
 
 setup(

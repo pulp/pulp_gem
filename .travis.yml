@@ -7,7 +7,7 @@
 ---
 sudo: required
 # https://docs.travis-ci.com/user/trusty-ci-environment/
-dist: xenial
+dist: bionic
 language: python
 python:
   # Fedora has 3.6 available (python36.x86_64), but pulp container images
@@ -16,13 +16,8 @@ python:
   - "3.7"
 env:
   matrix:
-    - DB=postgres TEST=pulp
-    - DB=postgres TEST=docs
-matrix:
-  exclude:
-    - python: '3.6'
-      env: DB=postgres TEST=docs
-  fast_finish: true
+    - TEST=pulp
+    - TEST=docs
 services:
   - postgresql
   - redis-server
