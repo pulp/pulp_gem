@@ -10,8 +10,7 @@ from rest_framework.serializers import (
     ValidationError,
 )
 
-from pulpcore.app.files import PulpTemporaryUploadedFile
-from pulpcore.app.serializers import SingleContentArtifactField
+from pulpcore.plugin.files import PulpTemporaryUploadedFile
 from pulpcore.plugin.models import Artifact, Remote, Repository, RepositoryVersion
 from pulpcore.plugin.serializers import (
     ArtifactSerializer,
@@ -20,11 +19,18 @@ from pulpcore.plugin.serializers import (
     PublicationDistributionSerializer,
     RemoteSerializer,
     RepositorySerializer,
+    SingleContentArtifactField,
 )
 
-from .models import GemContent, GemDistribution, GemPublication, GemRemote, GemRepository
+from pulp_gem.app.models import (
+    GemContent,
+    GemDistribution,
+    GemPublication,
+    GemRemote,
+    GemRepository,
+)
 
-from ..specs import analyse_gem
+from pulp_gem.specs import analyse_gem
 
 
 def _artifact_from_data(raw_data):
@@ -117,7 +123,6 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
 
         This must be used inside a task that locks on the Artifact and if given, the repository.
         """
-
         repository = validated_data.pop("repository", None)
         content = super().create(validated_data)
 

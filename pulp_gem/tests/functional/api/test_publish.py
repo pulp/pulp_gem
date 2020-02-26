@@ -6,7 +6,7 @@ from random import choice
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, sync
+from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, modify_repo, sync
 
 from pulp_gem.tests.functional.constants import (
     GEM_CONTENT_NAME,
@@ -55,9 +55,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         # Step 1
         repo = client.get(repo["pulp_href"])
         for gem_content in get_content(repo)[GEM_CONTENT_NAME]:
-            client.post(
-                repo["pulp_href"] + "modify/", {"add_content_units": [gem_content["pulp_href"]]}
-            )
+            modify_repo(cfg, repo, add_units=[gem_content])
         version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 

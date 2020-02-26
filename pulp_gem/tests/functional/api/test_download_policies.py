@@ -67,6 +67,7 @@ class SyncDownloadPolicyTestCase(unittest.TestCase):
         self.addCleanup(self.client.delete, remote["pulp_href"])
 
         # Sync the repository.
+        self.assertIsNotNone(repo["latest_version_href"])
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
