@@ -15,12 +15,17 @@ from pulpcore.plugin.models import Artifact, Remote, Repository, RepositoryVersi
 from pulpcore.plugin.serializers import (
     ArtifactSerializer,
     MultipleArtifactContentSerializer,
-    SingleContentArtifactField,
     PublicationSerializer,
     PublicationDistributionSerializer,
     RemoteSerializer,
     RepositorySerializer,
 )
+
+try:
+    from pulpcore.plugin.serializers import SingleContentArtifactField
+except ImportError:
+    from pulpcore.app.serializers import SingleContentArtifactField
+
 
 from .models import GemContent, GemDistribution, GemPublication, GemRemote, GemRepository
 
