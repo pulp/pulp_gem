@@ -27,9 +27,11 @@ pulpcore_branch: master
 pulpcore_pip_version_specifier: null
 pydocstyle: true
 pypi_username: None
+redmine_project: null
 stable_branch: null
 test_bindings: false
 test_performance: false
+test_s3: false
 travis_addtl_services: []
 travis_notifications: None
 
