@@ -6,13 +6,13 @@ from random import choice
 from requests.exceptions import HTTPError
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, sync
 
 from pulp_gem.tests.functional.constants import (
     GEM_CONTENT_NAME,
     GEM_PUBLICATION_PATH,
     GEM_REMOTE_PATH,
+    GEM_REPO_PATH,
 )
 from pulp_gem.tests.functional.utils import create_gem_publication, gen_gem_remote
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -47,7 +47,7 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         remote = client.post(GEM_REMOTE_PATH, body)
         self.addCleanup(client.delete, remote["pulp_href"])
 
-        repo = client.post(REPO_PATH, gen_repo())
+        repo = client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo["pulp_href"])
 
         sync(cfg, remote, repo)
@@ -55,7 +55,9 @@ class PublishAnyRepoVersionTestCase(unittest.TestCase):
         # Step 1
         repo = client.get(repo["pulp_href"])
         for gem_content in get_content(repo)[GEM_CONTENT_NAME]:
-            client.post(repo["versions_href"], {"add_content_units": [gem_content["pulp_href"]]})
+            client.post(
+                repo["pulp_href"] + "modify/", {"add_content_units": [gem_content["pulp_href"]]}
+            )
         version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo))
         non_latest = choice(version_hrefs[:-1])
 
