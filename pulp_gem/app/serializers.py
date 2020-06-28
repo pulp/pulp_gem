@@ -11,11 +11,11 @@ from rest_framework.serializers import (
 )
 
 from pulpcore.app.files import PulpTemporaryUploadedFile
+from pulpcore.app.serializers import SingleContentArtifactField
 from pulpcore.plugin.models import Artifact, Remote, Repository, RepositoryVersion
 from pulpcore.plugin.serializers import (
     ArtifactSerializer,
     MultipleArtifactContentSerializer,
-    SingleContentArtifactField,
     PublicationSerializer,
     PublicationDistributionSerializer,
     RemoteSerializer,
