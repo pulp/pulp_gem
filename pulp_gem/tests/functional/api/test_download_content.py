@@ -6,13 +6,14 @@ from random import choice
 from urllib.parse import urljoin
 
 from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES, REPO_PATH
+from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
 from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo, sync
 
 from pulp_gem.tests.functional.constants import (
     GEM_DISTRIBUTION_PATH,
     GEM_FIXTURE_URL,
     GEM_REMOTE_PATH,
+    GEM_REPO_PATH,
 )
 from pulp_gem.tests.functional.utils import (
     create_gem_publication,
@@ -74,7 +75,7 @@ class DownloadContentTestCase(unittest.TestCase):
         cfg = config.get_config()
         client = api.Client(cfg, api.json_handler)
 
-        repo = client.post(REPO_PATH, gen_repo())
+        repo = client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(client.delete, repo["pulp_href"])
 
         body = gen_gem_remote()

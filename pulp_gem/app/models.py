@@ -2,7 +2,13 @@ from logging import getLogger
 
 from django.db import models
 
-from pulpcore.plugin.models import Content, Publication, PublicationDistribution, Remote
+from pulpcore.plugin.models import (
+    Content,
+    Publication,
+    PublicationDistribution,
+    Remote,
+    Repository,
+)
 
 
 log = getLogger(__name__)
@@ -59,6 +65,18 @@ class GemRemote(Remote):
     """
 
     TYPE = "gem"
+
+    class Meta:
+        default_related_name = "%(app_label)s_%(model_name)s"
+
+
+class GemRepository(Repository):
+    """
+    A Repository for GemContent.
+    """
+
+    TYPE = "gem"
+    CONTENT_TYPES = [GemContent]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"

@@ -1,6 +1,7 @@
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.decorators import action
 
+from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.viewsets import (
     BaseDistributionViewSet,
     ContentFilter,
@@ -8,6 +9,8 @@ from pulpcore.plugin.viewsets import (
     OperationPostponedResponse,
     PublicationViewSet,
     RemoteViewSet,
+    RepositoryViewSet,
+    RepositoryVersionViewSet,
 )
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
@@ -16,12 +19,13 @@ from pulpcore.plugin.serializers import (
 from pulpcore.plugin.tasking import enqueue_with_reservation
 
 from . import tasks
-from .models import GemContent, GemDistribution, GemRemote, GemPublication
+from .models import GemContent, GemDistribution, GemRemote, GemPublication, GemRepository
 from .serializers import (
     GemContentSerializer,
     GemDistributionSerializer,
     GemPublicationSerializer,
     GemRemoteSerializer,
+    GemRepositorySerializer,
 )
 
 
@@ -113,6 +117,51 @@ class GemPublicationViewSet(PublicationViewSet):
             kwargs={"repository_version_pk": str(repository_version.pk)},
         )
         return OperationPostponedResponse(result, request)
+
+
+class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
+    """
+    A ViewSet for GemRepository.
+
+    Similar to the PackageViewSet above, define endpoint_name,
+    queryset and serializer, at a minimum.
+    """
+
+    endpoint_name = "gem"
+    queryset = GemRepository.objects.all()
+    serializer_class = GemRepositorySerializer
+
+    # This decorator is necessary since a sync operation is asyncrounous and returns
+    # the id and href of the sync task.
+    @swagger_auto_schema(
+        operation_description="Trigger an asynchronous task to sync content.",
+        operation_summary="Sync from remote",
+        responses={202: AsyncOperationResponseSerializer},
+    )
+    @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
+    def sync(self, request, pk):
+        """
+        Dispatches a sync task.
+        """
+        repository = self.get_object()
+        serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        remote = serializer.validated_data.get("remote")
+
+        result = enqueue_with_reservation(
+            tasks.synchronize,
+            [repository, remote],
+            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk},
+        )
+        return OperationPostponedResponse(result, request)
+
+
+class GemRepositoryVersionViewSet(RepositoryVersionViewSet):
+    """
+    A ViewSet for a GemRepositoryVersion represents a single Gem repository version.
+    """
+
+    parent_viewset = GemRepositoryViewSet
 
 
 class GemDistributionViewSet(BaseDistributionViewSet):

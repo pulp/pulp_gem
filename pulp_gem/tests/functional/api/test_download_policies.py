@@ -3,13 +3,13 @@
 import unittest
 
 from pulp_smash import api, config
-from pulp_smash.pulp3.constants import REPO_PATH
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary, sync
 
 from pulp_gem.tests.functional.constants import (
     GEM_FIXTURE_SUMMARY,
     GEM_REMOTE_PATH,
     DOWNLOAD_POLICIES,
+    GEM_REPO_PATH,
 )
 from pulp_gem.tests.functional.utils import gen_gem_remote, skip_if
 from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
@@ -59,7 +59,7 @@ class SyncDownloadPolicyTestCase(unittest.TestCase):
            second sync no extra units should be shown, since the same remote
            was synced again.
         """
-        repo = self.client.post(REPO_PATH, gen_repo())
+        repo = self.client.post(GEM_REPO_PATH, gen_repo())
         self.addCleanup(self.client.delete, repo["pulp_href"])
 
         body = gen_gem_remote(**{"policy": download_policy})
@@ -67,7 +67,6 @@ class SyncDownloadPolicyTestCase(unittest.TestCase):
         self.addCleanup(self.client.delete, remote["pulp_href"])
 
         # Sync the repository.
-        self.assertIsNone(repo["latest_version_href"])
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
@@ -80,6 +79,6 @@ class SyncDownloadPolicyTestCase(unittest.TestCase):
         sync(self.cfg, remote, repo)
         repo = self.client.get(repo["pulp_href"])
 
-        self.assertNotEqual(latest_version_href, repo["latest_version_href"])
+        self.assertEqual(latest_version_href, repo["latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), GEM_FIXTURE_SUMMARY)
-        self.assertDictEqual(get_added_content_summary(repo), {})
+        self.assertDictEqual(get_added_content_summary(repo), GEM_FIXTURE_SUMMARY)

@@ -11,17 +11,18 @@ from rest_framework.serializers import (
 )
 
 from pulpcore.app.files import PulpTemporaryUploadedFile
+from pulpcore.app.serializers import SingleContentArtifactField
 from pulpcore.plugin.models import Artifact, Remote, Repository, RepositoryVersion
 from pulpcore.plugin.serializers import (
     ArtifactSerializer,
     MultipleArtifactContentSerializer,
-    SingleContentArtifactField,
     PublicationSerializer,
     PublicationDistributionSerializer,
     RemoteSerializer,
+    RepositorySerializer,
 )
 
-from .models import GemContent, GemDistribution, GemPublication, GemRemote
+from .models import GemContent, GemDistribution, GemPublication, GemRemote, GemRepository
 
 from ..specs import analyse_gem
 
@@ -154,6 +155,16 @@ class GemRemoteSerializer(RemoteSerializer):
     class Meta:
         fields = RemoteSerializer.Meta.fields
         model = GemRemote
+
+
+class GemRepositorySerializer(RepositorySerializer):
+    """
+    A Serializer for GemRepository.
+    """
+
+    class Meta:
+        fields = RepositorySerializer.Meta.fields
+        model = GemRepository
 
 
 class GemPublicationSerializer(PublicationSerializer):

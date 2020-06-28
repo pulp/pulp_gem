@@ -54,7 +54,7 @@ class UpdateExistingContentArtifacts(Stage):
             await self.put(d_content)
 
 
-def synchronize(remote_pk, repository_pk, mirror):
+def synchronize(remote_pk, repository_pk, mirror=False):
     """
     Create a new version of the repository that is synchronized with the remote as specified.
 

@@ -1,0 +1,5 @@
+django
+dynaconf
+pulp-smash
+pulpcore-client
+pytest
