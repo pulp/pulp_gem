@@ -44,7 +44,7 @@ class GemContentViewSet(SingleArtifactContentUploadViewSet):
     A ViewSet for GemContent.
     """
 
-    endpoint_name = "gems"
+    endpoint_name = "gem"
     queryset = GemContent.objects.prefetch_related("_artifacts")
     serializer_class = GemContentSerializer
     filterset_class = GemContentFilter
@@ -58,31 +58,6 @@ class GemRemoteViewSet(RemoteViewSet):
     endpoint_name = "gem"
     queryset = GemRemote.objects.all()
     serializer_class = GemRemoteSerializer
-
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to sync gem content",
-        responses={202: AsyncOperationResponseSerializer},
-    )
-    @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
-    def sync(self, request, pk):
-        """
-        Synchronizes a repository.
-
-        The ``repository`` field has to be provided.
-        """
-        remote = self.get_object()
-        serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
-
-        # Validate synchronously to return 400 errors.
-        serializer.is_valid(raise_exception=True)
-        repository = serializer.validated_data.get("repository")
-        mirror = serializer.validated_data.get("mirror", True)
-        result = enqueue_with_reservation(
-            tasks.synchronize,
-            [repository, remote],
-            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
-        )
-        return OperationPostponedResponse(result, request)
 
 
 class GemPublicationViewSet(PublicationViewSet):
@@ -122,9 +97,6 @@ class GemPublicationViewSet(PublicationViewSet):
 class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     """
     A ViewSet for GemRepository.
-
-    Similar to the PackageViewSet above, define endpoint_name,
-    queryset and serializer, at a minimum.
     """
 
     endpoint_name = "gem"
@@ -147,11 +119,12 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         remote = serializer.validated_data.get("remote")
+        mirror = serializer.validated_data.get("mirror", True)
 
         result = enqueue_with_reservation(
             tasks.synchronize,
             [repository, remote],
-            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk},
+            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
         )
         return OperationPostponedResponse(result, request)
 

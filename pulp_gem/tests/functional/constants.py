@@ -16,7 +16,7 @@ DOWNLOAD_POLICIES = ["immediate", "streamed", "on_demand"]
 
 GEM_CONTENT_NAME = "gem.gem"
 
-GEM_CONTENT_PATH = urljoin(BASE_CONTENT_PATH, "gem/gems/")
+GEM_CONTENT_PATH = urljoin(BASE_CONTENT_PATH, "gem/gem/")
 
 GEM_DISTRIBUTION_PATH = urljoin(BASE_DISTRIBUTION_PATH, "gem/gem/")
 
