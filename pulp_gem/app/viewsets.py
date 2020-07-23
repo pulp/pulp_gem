@@ -1,4 +1,4 @@
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
@@ -18,9 +18,15 @@ from pulpcore.plugin.serializers import (
 )
 from pulpcore.plugin.tasking import enqueue_with_reservation
 
-from . import tasks
-from .models import GemContent, GemDistribution, GemRemote, GemPublication, GemRepository
-from .serializers import (
+from pulp_gem.app import tasks
+from pulp_gem.app.models import (
+    GemContent,
+    GemDistribution,
+    GemRemote,
+    GemPublication,
+    GemRepository,
+)
+from pulp_gem.app.serializers import (
     GemContentSerializer,
     GemDistributionSerializer,
     GemPublicationSerializer,
@@ -71,8 +77,8 @@ class GemPublicationViewSet(PublicationViewSet):
 
     # This decorator is necessary since a publish operation is asyncrounous and returns
     # the id and href of the publish task.
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to publish gem content",
+    @extend_schema(
+        description="Trigger an asynchronous task to publish gem content",
         responses={202: AsyncOperationResponseSerializer},
     )
     def create(self, request):
@@ -105,9 +111,9 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
 
     # This decorator is necessary since a sync operation is asyncrounous and returns
     # the id and href of the sync task.
-    @swagger_auto_schema(
-        operation_description="Trigger an asynchronous task to sync content.",
-        operation_summary="Sync from remote",
+    @extend_schema(
+        description="Trigger an asynchronous task to sync content.",
+        summary="Sync from remote",
         responses={202: AsyncOperationResponseSerializer},
     )
     @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
