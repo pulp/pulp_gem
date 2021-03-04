@@ -26,7 +26,7 @@ from pulp_gem.tests.functional.constants import (
 def set_up_module():
     """Skip tests Pulp 3 isn't under test or if pulp_gem isn't installed."""
     require_pulp_3(SkipTest)
-    require_pulp_plugins({"pulp_gem"}, SkipTest)
+    require_pulp_plugins({"gem"}, SkipTest)
 
 
 def gen_gem_remote(url=GEM_FIXTURE_URL, **kwargs):
