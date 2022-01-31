@@ -1,18 +1,33 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-additional_plugins: []
+# generated with plugin_template@2021.08.26-65-g3505809
+
+additional_repos: []
+aiohttp_fixtures_origin: 172.18.0.1
 black: true
 check_commit_message: false
+check_gettext: true
+check_manifest: true
+check_openapi_schema: true
+check_stray_pulpcore_imports: true
 cherry_pick_automation: false
+ci_env: {}
+ci_trigger: '{pull_request: {branches: [''*'']}}'
+core_import_allowed: []
 coverage: false
 deploy_client_to_pypi: false
 deploy_client_to_rubygems: false
 deploy_daily_client_to_pypi: false
 deploy_daily_client_to_rubygems: false
 deploy_to_pypi: false
+disabled_redis_runners: []
 docker_fixtures: false
 docs_test: true
+flake8: true
+issue_tracker: github
+noissue_marker: '[noissue]'
+parallel_test_workers: 8
 plugin_app_label: gem
 plugin_camel: PulpGem
 plugin_camel_short: Gem
@@ -20,18 +35,37 @@ plugin_caps: PULP_GEM
 plugin_caps_short: GEM
 plugin_dash: pulp-gem
 plugin_dash_short: gem
+plugin_default_branch: main
 plugin_name: pulp_gem
 plugin_snake: pulp_gem
+post_job_template: null
+pre_job_template: null
+publish_docs_to_pulpprojectdotorg: true
+pulp_scheme: https
 pulp_settings: null
-pulpcore_branch: master
+pulpcore_branch: main
 pulpcore_pip_version_specifier: null
+pulpcore_revision: null
+pulpprojectdotorg_key_id: null
 pydocstyle: true
 pypi_username: None
+python_version: '3.8'
 redmine_project: null
+release_email: pulp-infra@redhat.com
+release_user: pulpbot
+single_commit_check: true
 stable_branch: null
+sync_ci: true
+tasking_allow_async_unsafe: true
+test_azure: true
 test_bindings: false
+test_cli: false
+test_deprecations: true
 test_performance: false
-test_s3: false
+test_released_plugin_with_next_pulpcore_release: false
+test_s3: true
 travis_addtl_services: []
 travis_notifications: None
+update_github: true
+upgrade_range: []
 
