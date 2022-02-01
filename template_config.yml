@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-65-g3505809
+# generated with plugin_template@2021.08.26-68-g01ed1c2
 
 additional_repos: []
 aiohttp_fixtures_origin: 172.18.0.1
@@ -68,4 +68,5 @@ travis_addtl_services: []
 travis_notifications: None
 update_github: true
 upgrade_range: []
+use_issue_template: true
 
