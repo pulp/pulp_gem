@@ -1,11 +1,13 @@
 # Makefile for Sphinx documentation
 #
 
+SHELL := /bin/bash
 # You can set these variables from the command line.
-SPHINXOPTS    = -W -n
-SPHINXBUILD   = sphinx-build
-PAPER         =
-BUILDDIR      = _build
+SPHINXOPTS           = -W  # turn warnings into errors
+SPHINXBUILD          = sphinx-build
+PAPER                =
+BUILDDIR             = _build
+DIAGRAM_BUILD_DIR    = _diagrams
 PULP_URL      = "http://localhost:24817"
 
 # Internal variables.
@@ -15,11 +17,12 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext diagrams
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  html       to make standalone HTML files"
+	@echo "  diagrams   to make diagram images"
 	@echo "  dirhtml    to make HTML files named index.html in directories"
 	@echo "  singlehtml to make a single large HTML file"
 	@echo "  pickle     to make pickle files"
@@ -40,16 +43,37 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
+	rm -rf $(BUILDDIR)/*
+	rm -rf $(DIAGRAM_BUILD_DIR)/*
+
+install:
+	python3 -m venv pulpdocs
+	source pulpdocs/bin/activate && pip install -r ../doc_requirements.txt
+
+diagrams:
+ifneq ($(wildcard $(DIAGRAM_SOURCE_DIR)), )
+	mkdir -p $(DIAGRAM_BUILD_DIR)
+	python3 -m plantuml diagrams_src/*.dot
+	# cp + rm = mv  workaround https://pulp.plan.io/issues/4791#note-3
+	cp diagrams_src/*.png $(DIAGRAM_BUILD_DIR)/
+	rm diagrams_src/*.png
+else
+	@echo "Did not find diagrams_src."
+endif
 
 html:
+	mkdir -p $(BUILDDIR)/html
 	curl --fail -o _static/api.json "$(PULP_URL)/pulp/api/v3/docs/api.json?plugin=pulp_gem&include_html=1"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
 dirhtml:
-	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+ifneq ("$(wildcard pulpdocs/bin/activate)","")
+	source pulpdocs/bin/activate && PULP_CONTENT_ORIGIN=localhost $(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+else
+	PULP_CONTENT_ORIGIN=localhost $(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+endif
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/dirhtml."
 
@@ -73,6 +97,24 @@ htmlhelp:
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in $(BUILDDIR)/htmlhelp."
+
+qthelp:
+	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
+	@echo
+	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
+	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
+	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/PulpDocs.qhcp"
+	@echo "To view the help file:"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/PulpDocs.qhc"
+
+devhelp:
+	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
+	@echo
+	@echo "Build finished."
+	@echo "To view the help file:"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/PulpDocs"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/PulpDocs"
+	@echo "# devhelp"
 
 epub:
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
@@ -135,3 +177,6 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in $(BUILDDIR)/doctest/output.txt."
+
+run:
+	cd $(BUILDDIR) && python -m http.server 8010
