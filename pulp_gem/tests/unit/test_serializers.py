@@ -13,8 +13,6 @@ class TestGemContentSerializer(TestCase):
     def setUp(self):
         """Set up the GemContentSerializer tests."""
         self.artifact = Artifact.objects.create(
-            md5="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            sha1="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             sha224="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             sha256="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             sha384="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",  # noqa
@@ -23,8 +21,6 @@ class TestGemContentSerializer(TestCase):
             file=SimpleUploadedFile("test_filename_a", b"test content_a"),
         )
         self.artifact2 = Artifact.objects.create(
-            md5="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            sha1="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             sha224="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             sha256="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             sha384="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",  # noqa
