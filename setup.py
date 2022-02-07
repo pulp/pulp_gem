@@ -2,18 +2,22 @@
 
 from setuptools import find_packages, setup
 
-requirements = ["packaging", "pulpcore>=3.4", "rubymarshal==1.0.3"]
+with open("requirements.txt") as requirements:
+    requirements = requirements.readlines()
 
+with open("README.rst") as f:
+    long_description = f.read()
 
 setup(
     name="pulp-gem",
     version="0.0.1b3.dev",
     description="Gemfile plugin for the Pulp Project",
+    long_description=long_description,
     license="GPLv2+",
     author="Matthias Dellweg",
     author_email="dellweg@atix.de",
     url="https://github.com/ATIX-AG/pulp_gem",
-    python_requires=">=3.6",
+    python_requires=">=3.8",
     install_requires=requirements,
     include_package_data=True,
     packages=find_packages(exclude=["tests", "tests.*"]),
