@@ -2,6 +2,7 @@ import logging
 import re
 import gzip
 import shutil
+import tempfile
 
 from gettext import gettext as _
 from packaging import version
@@ -9,7 +10,6 @@ from packaging import version
 from django.core.files import File
 
 from pulpcore.plugin.models import RepositoryVersion, PublishedArtifact, PublishedMetadata
-from pulpcore.plugin.tasking import WorkingDirectory
 
 from pulp_gem.app.models import GemContent, GemPublication
 from pulp_gem.specs import write_specs, Key
@@ -48,7 +48,7 @@ def publish(repository_version_pk):
             repo=repository_version.repository.name, ver=repository_version.number
         )
     )
-    with WorkingDirectory():
+    with tempfile.TemporaryDirectory("."):
         with GemPublication.create(repository_version) as publication:
             specs = []
             latest_versions = {}
