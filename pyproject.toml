@@ -4,7 +4,7 @@ filename = "CHANGES.rst"
 directory = "CHANGES/"
 title_format = "{version} ({project_date})"
 template = "CHANGES/.TEMPLATE.rst"
-issue_format = "`#{issue} <https://pulp.plan.io/issues/{issue}>`_"
+issue_format = "`#{issue} <https://github.com/pulp/pulp_gem/issues/{issue}>`_"
 
 
 [tool.black]
@@ -22,3 +22,22 @@ exclude = '''
 )/
 '''
 
+
+[tool.check-manifest]
+ignore = [
+    ".bumpversion.cfg",
+    "CHANGES/**",
+    "CONTRIBUTING.rst",
+    "CODEOWNERS",
+    "HISTORY.rst",
+    "dev_requirements.txt",
+    "doc_requirements.txt",
+    "docs/**",
+    "flake8.cfg",
+    "template_config.yml",
+    ".travis/**",
+    ".travis.yml",
+    ".pep8speaks.yml",
+    ".ci/**",
+    ".github/**"
+]
