@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.viewsets import (
-    BaseDistributionViewSet,
+    DistributionViewSet,
     ContentFilter,
     SingleArtifactContentUploadViewSet,
     OperationPostponedResponse,
@@ -143,7 +143,7 @@ class GemRepositoryVersionViewSet(RepositoryVersionViewSet):
     parent_viewset = GemRepositoryViewSet
 
 
-class GemDistributionViewSet(BaseDistributionViewSet):
+class GemDistributionViewSet(DistributionViewSet):
     """
     ViewSet for GemDistributions.
     """
