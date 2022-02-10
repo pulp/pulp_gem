@@ -5,7 +5,7 @@ from django.db import models
 from pulpcore.plugin.models import (
     Content,
     Publication,
-    PublicationDistribution,
+    Distribution,
     Remote,
     Repository,
 )
@@ -37,7 +37,7 @@ class GemContent(Content):
         unique_together = ("name", "version")
 
 
-class GemDistribution(PublicationDistribution):
+class GemDistribution(Distribution):
     """
     A Distribution for GemContent.
     """

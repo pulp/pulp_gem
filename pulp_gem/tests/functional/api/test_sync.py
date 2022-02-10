@@ -2,9 +2,8 @@
 """Tests that sync gem plugin repositories."""
 import unittest
 
-from pulp_smash import api, cli, config
+from pulp_smash import api, config
 from pulp_smash.exceptions import TaskReportError
-from pulp_smash.pulp3.constants import MEDIA_PATH
 from pulp_smash.pulp3.utils import gen_repo, get_added_content_summary, get_content_summary, sync
 
 from pulp_gem.tests.functional.constants import (
@@ -70,39 +69,6 @@ class BasicSyncTestCase(unittest.TestCase):
         self.assertEqual(latest_version_href, repo["latest_version_href"])
         self.assertDictEqual(get_content_summary(repo), GEM_FIXTURE_SUMMARY)
         self.assertDictEqual(get_added_content_summary(repo), GEM_FIXTURE_SUMMARY)
-
-    def test_file_decriptors(self):
-        """Test whether file descriptors are closed properly.
-
-        This test targets the following issue:
-
-        `Pulp #4073 <https://pulp.plan.io/issues/4073>`_
-
-        Do the following:
-
-        1. Check if 'lsof' is installed. If it is not, skip this test.
-        2. Create and sync a repo.
-        3. Run the 'lsof' command to verify that files in the
-           path ``/var/lib/pulp/`` are closed after the sync.
-        4. Assert that issued command returns `0` opened files.
-        """
-        cli_client = cli.Client(self.cfg, cli.echo_handler)
-
-        # check if 'lsof' is available
-        if cli_client.run(("which", "lsof")).returncode != 0:
-            raise unittest.SkipTest("lsof package is not present")
-
-        repo = self.client.post(GEM_REPO_PATH, gen_repo())
-        self.addCleanup(self.client.delete, repo["pulp_href"])
-
-        remote = self.client.post(GEM_REMOTE_PATH, gen_gem_remote())
-        self.addCleanup(self.client.delete, remote["pulp_href"])
-
-        sync(self.cfg, remote, repo)
-
-        cmd = "lsof -t +D {}".format(MEDIA_PATH).split()
-        response = cli_client.run(cmd).stdout
-        self.assertEqual(len(response), 0, response)
 
 
 class SyncInvalidTestCase(unittest.TestCase):

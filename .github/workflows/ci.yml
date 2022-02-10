@@ -11,25 +11,9 @@ on: {pull_request: {branches: ['*']}}
 jobs:
 
 
-  single_commit:
-    name: Assert single commit
-    if: github.base_ref == 'main'
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v1
-      with:
-        fetch-depth: 30
-    - name: Checkout main
-      run: git fetch origin main
-    - name: create local main branch
-      run: git branch main origin/main
-    - name: Commit Count Check
-      run: test `git log  --oneline --no-merges HEAD ^main  | wc -l ` = 1
-    runs-on: ubuntu-latest
-
   lint:
     runs-on: ubuntu-latest
-    
+
 
     steps:
       - uses: actions/checkout@v2
@@ -46,7 +30,7 @@ jobs:
       - name: Install requirements
         run: pip3 install -r dev_requirements.txt
 
-      
+
 
       # run black separately from flake8 to get a diff
       - name: Run black
@@ -108,7 +92,7 @@ jobs:
           echo "TEST=${{ matrix.env.TEST }}" >> $GITHUB_ENV
 
       - name: Before Install
-        
+
         run: .github/workflows/scripts/before_install.sh
         shell: bash
         env:
@@ -122,7 +106,7 @@ jobs:
           GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
 
       - name: Install
-        
+
         run: .github/workflows/scripts/install.sh
         shell: bash
         env:
@@ -136,7 +120,7 @@ jobs:
           GITHUB_CONTEXT: ${{ github.event.pull_request.commits_url }}
 
       - name: Install Python client
-        
+
         run: .github/workflows/scripts/install_python_client.sh
         shell: bash
 
@@ -146,7 +130,7 @@ jobs:
         shell: bash
 
       - name: Before Script
-        
+
         run: .github/workflows/scripts/before_script.sh
         shell: bash
         env:
@@ -167,7 +151,7 @@ jobs:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
 
       - name: Script
-        
+
         run: .github/workflows/scripts/script.sh
         shell: bash
         env:

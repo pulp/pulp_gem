@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
 from pulpcore.plugin.viewsets import (
-    BaseDistributionViewSet,
+    DistributionViewSet,
     ContentFilter,
     SingleArtifactContentUploadViewSet,
     OperationPostponedResponse,
@@ -16,7 +16,7 @@ from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositorySyncURLSerializer,
 )
-from pulpcore.plugin.tasking import enqueue_with_reservation
+from pulpcore.plugin.tasking import dispatch
 
 from pulp_gem.app import tasks
 from pulp_gem.app.models import (
@@ -92,9 +92,9 @@ class GemPublicationViewSet(PublicationViewSet):
         serializer.is_valid(raise_exception=True)
         repository_version = serializer.validated_data.get("repository_version")
 
-        result = enqueue_with_reservation(
+        result = dispatch(
             tasks.publish,
-            [repository_version.repository],
+            exclusive_resources=[repository_version.repository],
             kwargs={"repository_version_pk": str(repository_version.pk)},
         )
         return OperationPostponedResponse(result, request)
@@ -127,9 +127,9 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         remote = serializer.validated_data.get("remote")
         mirror = serializer.validated_data.get("mirror", True)
 
-        result = enqueue_with_reservation(
+        result = dispatch(
             tasks.synchronize,
-            [repository, remote],
+            exclusive_resources=[repository, remote],
             kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
         )
         return OperationPostponedResponse(result, request)
@@ -143,7 +143,7 @@ class GemRepositoryVersionViewSet(RepositoryVersionViewSet):
     parent_viewset = GemRepositoryViewSet
 
 
-class GemDistributionViewSet(BaseDistributionViewSet):
+class GemDistributionViewSet(DistributionViewSet):
     """
     ViewSet for GemDistributions.
     """

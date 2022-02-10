@@ -1,0 +1,3 @@
+packaging
+pulpcore>=3.16
+rubymarshal==1.0.3
