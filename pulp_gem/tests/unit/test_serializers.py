@@ -1,5 +1,6 @@
 from unittest.mock import patch
 from django.test import TestCase
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 
 from pulp_gem.app.serializers import GemContentSerializer
@@ -36,7 +37,7 @@ class TestGemContentSerializer(TestCase):
         # Preparation
         ANALYZE_GEM.return_value = ("testname", "1.2.3-test", "---\n...")
         _ARTIFACT_FROM_DATA.return_value = self.artifact2
-        data = {"artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk)}
+        data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
         serializer = GemContentSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         # Verification
@@ -50,7 +51,7 @@ class TestGemContentSerializer(TestCase):
         # Preparation
         ANALYZE_GEM.return_value = ("testname", "1.2.3-test", "---\n...")
         _ARTIFACT_FROM_DATA.return_value = self.artifact2
-        data = {"artifact": "/pulp/api/v3/artifacts/{}/".format(self.artifact.pk)}
+        data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
         serializer = GemContentSerializer(data=data)
         self.assertTrue(serializer.is_valid())
         serializer.save()
