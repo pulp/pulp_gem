@@ -10,7 +10,7 @@ with open("README.rst") as f:
 
 setup(
     name="pulp-gem",
-    version="0.0.1b3",
+    version="0.0.1b4.dev",
     description="Gemfile plugin for the Pulp Project",
     long_description=long_description,
     license="GPLv2+",
