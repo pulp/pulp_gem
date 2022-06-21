@@ -7,7 +7,7 @@
 #
 # For more info visit https://github.com/pulp/plugin_template
 
-set -euv
+set -mveuo pipefail
 
 export PULP_URL="${PULP_URL:-https://pulp}"
 
@@ -30,7 +30,7 @@ export response=$(curl --write-out %{http_code} --silent --output /dev/null http
 if [ "$response" == "200" ];
 then
   echo "pulp_gem client $VERSION has already been released. Installing from PyPI."
-  pip install pulp-gem-client==$VERSION
+  docker exec pulp pip3 install pulp-gem-client==$VERSION
   mkdir -p dist
   tar cvf python-client.tar ./dist
   exit
@@ -41,7 +41,7 @@ rm -rf pulp_gem-client
 ./generate.sh pulp_gem python $VERSION
 cd pulp_gem-client
 python setup.py sdist bdist_wheel --python-tag py3
-find . -name "*.whl" -exec pip install {} \;
+find . -name "*.whl" -exec docker exec pulp pip3 install /root/pulp-openapi-generator/pulp_gem-client/{} \;
 tar cvf ../../pulp_gem/python-client.tar ./dist
 
 find ./docs/* -exec sed -i 's/Back to README/Back to HOME/g' {} \;
