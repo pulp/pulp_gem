@@ -43,7 +43,7 @@ jobs:
       - name: Install python dependencies
         run: |
           echo ::group::PYDEPS
-          pip install packaging~=21.3 bandersnatch bump2version gitpython python-redmine towncrier==19.9.0 wheel
+          pip install packaging~=21.3 bandersnatch bump2version gitpython towncrier==19.9.0 wheel
           echo ::endgroup::
 
       - name: Configure Git with pulpbot name and email
@@ -288,7 +288,7 @@ jobs:
       - name: Install python dependencies
         run: |
           echo ::group::PYDEPS
-          pip install gitpython python-redmine requests packaging~=21.3 tweepy
+          pip install gitpython requests packaging~=21.3 tweepy
           echo ::endgroup::
 
       - name: Push branch and tag to GitHub
@@ -307,8 +307,6 @@ jobs:
         run: |
           tar -xvf docs.tar -C ./docs
           .github/workflows/scripts/publish_docs.sh tag ${{ github.event.inputs.release }}
-
-      
 
       - name: Update GitHub
         continue-on-error: true
