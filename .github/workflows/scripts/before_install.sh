@@ -30,11 +30,8 @@ fi
 COMMIT_MSG=$(git log --format=%B --no-merges -1)
 export COMMIT_MSG
 
-if [[ "$TEST" == "plugin-from-pypi" ]]; then
-  COMPONENT_VERSION=$(http https://pypi.org/pypi/pulp-gem/json | jq -r '.info.version')
-else
-  COMPONENT_VERSION=$(sed -ne "s/\s*version.*=.*['\"]\(.*\)['\"][\s,]*/\1/p" setup.py)
-fi
+COMPONENT_VERSION=$(sed -ne "s/\s*version.*=.*['\"]\(.*\)['\"][\s,]*/\1/p" setup.py)
+
 mkdir .ci/ansible/vars || true
 echo "---" > .ci/ansible/vars/main.yaml
 echo "legacy_component_name: pulp_gem" >> .ci/ansible/vars/main.yaml
@@ -63,6 +60,7 @@ cd ..
 
 git clone --depth=1 https://github.com/pulp/pulp-openapi-generator.git
 
+pip install pulp-cli
 
 
 # Intall requirements for ansible playbooks
