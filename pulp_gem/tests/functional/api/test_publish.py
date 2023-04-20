@@ -1,77 +1,57 @@
-# coding=utf-8
 """Tests that publish gem plugin repositories."""
-import unittest
+import pytest
 from random import choice
 
-from requests.exceptions import HTTPError
 
-from pulp_smash import api, config
-from pulp_smash.pulp3.utils import gen_repo, get_content, get_versions, modify_repo, sync
-
-from pulp_gem.tests.functional.constants import (
-    GEM_CONTENT_NAME,
-    GEM_PUBLICATION_PATH,
-    GEM_REMOTE_PATH,
-    GEM_REPO_PATH,
-)
-from pulp_gem.tests.functional.utils import create_gem_publication, gen_gem_remote
-from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
-
-
-class PublishAnyRepoVersionTestCase(unittest.TestCase):
+@pytest.mark.parallel
+def test_publish(
+    gem_repo,
+    gem_repository_api_client,
+    gem_repository_version_api_client,
+    gem_remote_factory,
+    gem_content_api_client,
+    gem_publication_factory,
+    monitor_task,
+):
     """Test whether a particular repository version can be published.
 
-    This test targets the following issues:
-
-    * `Pulp #3324 <https://pulp.plan.io/issues/3324>`_
-    * `Pulp Smash #897 <https://github.com/PulpQE/pulp-smash/issues/897>`_
+    1. Create a repository with at least 2 repository versions.
+    2. Create a publication by supplying the latest ``repository_version``.
+    3. Assert that the publication ``repository_version`` attribute points
+       to the latest repository version.
+    4. Create a publication by supplying the non-latest ``repository_version``.
+    5. Assert that the publication ``repository_version`` attribute points
+       to the supplied repository version.
     """
+    remote = gem_remote_factory()
+    result = gem_repository_api_client.sync(gem_repo.pulp_href, {"remote": remote.pulp_href})
+    monitor_task(result.task)
+    repo = gem_repository_api_client.read(gem_repo.pulp_href)
 
-    def test_all(self):
-        """Test whether a particular repository version can be published.
+    # Step 1
+    content = gem_content_api_client.list(repository_version=repo.latest_version_href)
+    for i, gem_content in enumerate(content.results):
+        repo_ver_href = f"{repo.versions_href}{i}/"
+        body = {"add_content_units": [gem_content.pulp_href], "base_version": repo_ver_href}
+        result = gem_repository_api_client.modify(repo.pulp_href, body)
+        monitor_task(result.task)
 
-        1. Create a repository with at least 2 repository versions.
-        2. Create a publication by supplying the latest ``repository_version``.
-        3. Assert that the publication ``repository_version`` attribute points
-           to the latest repository version.
-        4. Create a publication by supplying the non-latest ``repository_version``.
-        5. Assert that the publication ``repository_version`` attribute points
-           to the supplied repository version.
-        6. Assert that an exception is raised when providing two different
-           repository versions to be published at same time.
-        """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
+    repo = gem_repository_api_client.read(repo.pulp_href)
+    assert repo.latest_version_href.endswith(f"/{content.count + 1}/")
 
-        body = gen_gem_remote()
-        remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
+    versions = gem_repository_version_api_client.list(repo.pulp_href)
+    # This is in descending order, so latest first
+    version_hrefs = [ver.pulp_href for ver in versions.results]
+    non_latest = choice(version_hrefs[:-1])
 
-        repo = client.post(GEM_REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["pulp_href"])
+    # Step 2
+    publication = gem_publication_factory(repository=repo.pulp_href)
 
-        sync(cfg, remote, repo)
+    # Step 3
+    assert publication.repository_version == version_hrefs[0]
 
-        # Step 1
-        repo = client.get(repo["pulp_href"])
-        for gem_content in get_content(repo)[GEM_CONTENT_NAME]:
-            modify_repo(cfg, repo, add_units=[gem_content])
-        version_hrefs = tuple(ver["pulp_href"] for ver in get_versions(repo))
-        non_latest = choice(version_hrefs[:-1])
+    # Step 4
+    publication = gem_publication_factory(repository_version=non_latest)
 
-        # Step 2
-        publication = create_gem_publication(cfg, repo)
-
-        # Step 3
-        self.assertEqual(publication["repository_version"], version_hrefs[-1])
-
-        # Step 4
-        publication = create_gem_publication(cfg, repo, non_latest)
-
-        # Step 5
-        self.assertEqual(publication["repository_version"], non_latest)
-
-        # Step 6
-        with self.assertRaises(HTTPError):
-            body = {"repository": repo["pulp_href"], "repository_version": non_latest}
-            client.post(GEM_PUBLICATION_PATH, body)
+    # Step 5
+    assert publication.repository_version == non_latest

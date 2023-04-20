@@ -1,108 +1,57 @@
-# coding=utf-8
 """Tests that verify download of content served by Pulp."""
+import pytest
 import hashlib
-import unittest
 from random import choice
 from urllib.parse import urljoin
 
-from pulp_smash import api, config, utils
-from pulp_smash.pulp3.constants import ON_DEMAND_DOWNLOAD_POLICIES
-from pulp_smash.pulp3.utils import download_content_unit, gen_distribution, gen_repo, sync
-
-from pulp_gem.tests.functional.constants import (
-    GEM_DISTRIBUTION_PATH,
-    GEM_FIXTURE_URL,
-    GEM_REMOTE_PATH,
-    GEM_REPO_PATH,
-)
-from pulp_gem.tests.functional.utils import (
-    create_gem_publication,
-    gen_gem_remote,
-    get_gem_content_paths,
-)
-from pulp_gem.tests.functional.utils import set_up_module as setUpModule  # noqa:F401
+from pulp_gem.tests.functional.constants import DOWNLOAD_POLICIES, GEM_FIXTURE_URL
 
 
-class DownloadContentTestCase(unittest.TestCase):
-    """Verify whether content served by pulp can be downloaded."""
+@pytest.mark.parametrize("policy", DOWNLOAD_POLICIES)
+def test_download_content(
+    policy,
+    gem_repo,
+    gem_repository_api_client,
+    gem_content_api_client,
+    gem_remote_factory,
+    gem_publication_factory,
+    gem_distribution_factory,
+    http_get,
+    download_content_unit,
+    monitor_task,
+    delete_orphans_pre,
+):
+    """Verify whether content served by pulp can be downloaded.
 
-    def test_immediate(self):
-        """Download content from Pulp. Content is synced with immediate.
+    Do the following:
 
-        See :meth:`do_test`.
-        """
-        self.do_test("immediate")
+    1. Create, populate, publish, and distribute a repository.
+    2. Select a random content unit in the distribution. Download that
+       content unit from Pulp, and verify that the content unit has the
+       same checksum when fetched directly from Pulp-Fixtures.
+    """
+    remote = gem_remote_factory(policy=policy)
 
-    def test_on_demand_download_policies(self):
-        """Download content from Pulp. Content is synced with an On-Demand policy.
+    # Sync repository
+    body = {"remote": remote.pulp_href}
+    result = gem_repository_api_client.sync(gem_repo.pulp_href, body)
+    monitor_task(result.task)
+    repo = gem_repository_api_client.read(gem_repo.pulp_href)
 
-        See :meth:`do_test`.
+    # Create a publication.
+    publication = gem_publication_factory(repository=gem_repo.pulp_href)
 
-        This test targets the following issue:
+    # Create a distribution.
+    distribution = gem_distribution_factory(publication=publication.pulp_href)
 
-        `Pulp #4496 <https://pulp.plan.io/issues/4496>`_
-        """
-        for policy in ON_DEMAND_DOWNLOAD_POLICIES:
-            with self.subTest(policy):
-                self.do_test(policy)
+    # Pick a content unit, and download it from both Pulp Fixtures…
+    content = gem_content_api_client.list(repository_version=repo.latest_version_href)
+    content_paths = [f"gems/{c.name}-{c.version}.gem" for c in content.results]
+    unit_path = choice(content_paths)
+    fixtures_hash = hashlib.sha256(http_get(urljoin(GEM_FIXTURE_URL, unit_path))).hexdigest()
 
-    def do_test(self, policy):
-        """Verify whether content served by pulp can be downloaded.
+    # …and Pulp.
+    content = download_content_unit(distribution.base_path, unit_path)
+    pulp_hash = hashlib.sha256(content).hexdigest()
 
-        The process of publishing content is more involved in Pulp 3 than it
-        was under Pulp 2. Given a repository, the process is as follows:
-
-        1. Create a publication from the repository. (The latest repository
-           version is selected if no version is specified.) A publication is a
-           repository version plus metadata.
-        2. Create a distribution from the publication. The distribution defines
-           at which URLs a publication is available, e.g.
-           ``http://example.com/content/foo/`` and
-           ``http://example.com/content/bar/``.
-
-        Do the following:
-
-        1. Create, populate, publish, and distribute a repository.
-        2. Select a random content unit in the distribution. Download that
-           content unit from Pulp, and verify that the content unit has the
-           same checksum when fetched directly from Pulp-Fixtures.
-
-        This test targets the following issues:
-
-        * `Pulp #2895 <https://pulp.plan.io/issues/2895>`_
-        * `Pulp Smash #872 <https://github.com/PulpQE/pulp-smash/issues/872>`_
-        """
-        cfg = config.get_config()
-        client = api.Client(cfg, api.json_handler)
-
-        repo = client.post(GEM_REPO_PATH, gen_repo())
-        self.addCleanup(client.delete, repo["pulp_href"])
-
-        body = gen_gem_remote()
-        remote = client.post(GEM_REMOTE_PATH, body)
-        self.addCleanup(client.delete, remote["pulp_href"])
-
-        sync(cfg, remote, repo)
-        repo = client.get(repo["pulp_href"])
-
-        # Create a publication.
-        publication = create_gem_publication(cfg, repo)
-        self.addCleanup(client.delete, publication["pulp_href"])
-
-        # Create a distribution.
-        body = gen_distribution()
-        body["publication"] = publication["pulp_href"]
-        distribution = client.using_handler(api.task_handler).post(GEM_DISTRIBUTION_PATH, body)
-        self.addCleanup(client.delete, distribution["pulp_href"])
-
-        # Pick a content unit, and download it from both Pulp Fixtures…
-        unit_path = choice(get_gem_content_paths(repo))
-        fixtures_hash = hashlib.sha256(
-            utils.http_get(urljoin(GEM_FIXTURE_URL, unit_path))
-        ).hexdigest()
-
-        # …and Pulp.
-        content = download_content_unit(cfg, distribution, unit_path)
-        pulp_hash = hashlib.sha256(content).hexdigest()
-
-        self.assertEqual(fixtures_hash, pulp_hash)
+    assert fixtures_hash == pulp_hash
