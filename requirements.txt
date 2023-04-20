@@ -1,3 +1,2 @@
-packaging>=21.3,<22
-pulpcore>=3.21.5,<3.25
+pulpcore>=3.22.0,<3.25
 rubymarshal==1.0.3
