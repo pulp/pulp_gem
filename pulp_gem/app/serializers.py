@@ -195,7 +195,14 @@ class GemDistributionSerializer(DistributionSerializer):
         queryset=Publication.objects.exclude(complete=False),
         allow_null=True,
     )
+    remote = DetailRelatedField(
+        required=False,
+        help_text=_("Remote that can be used to fetch content when using pull-through caching."),
+        view_name_pattern=r"remotes(-.*/.*)?-detail",
+        queryset=Remote.objects.all(),
+        allow_null=True,
+    )
 
     class Meta:
-        fields = DistributionSerializer.Meta.fields + ("publication",)
+        fields = DistributionSerializer.Meta.fields + ("publication", "remote")
         model = GemDistribution

@@ -1,2 +1,2 @@
-pulpcore>=3.25.0,<3.40
+pulpcore>=3.28.0,<3.40
 rubymarshal==1.0.3
