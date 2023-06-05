@@ -17,10 +17,15 @@ def do_sync(gem_repository_api_client, gem_repository_factory, gem_remote_factor
     def _do_sync(repo=None, remote=None, url=GEM_FIXTURE_URL, policy="immediate"):
         if repo is None:
             repo = gem_repository_factory()
-        if remote is None:
-            remote = gem_remote_factory(url=url, policy=policy)
 
-        result = gem_repository_api_client.sync(repo.pulp_href, {"remote": remote.pulp_href})
+        if repo.remote is None:
+            if remote is None:
+                remote = gem_remote_factory(url=url, policy=policy)
+            sync_args = {"remote": remote.pulp_href}
+        else:
+            sync_args = {}
+
+        result = gem_repository_api_client.sync(repo.pulp_href, sync_args)
         monitor_task(result.task)
         repo = gem_repository_api_client.read(repo.pulp_href)
         return repo, remote
@@ -33,7 +38,9 @@ def do_sync(gem_repository_api_client, gem_repository_factory, gem_remote_factor
 def test_download_policies(
     download_policy,
     do_sync,
+    gem_repository_api_client,
     gem_repository_version_api_client,
+    monitor_task,
 ):
     """Sync repositories with the different ``download_policy``.
 
@@ -58,6 +65,11 @@ def test_download_policies(
     assert added_summary == GEM_FIXTURE_SUMMARY
 
     # Sync the repository again.
+    update_task = gem_repository_api_client.partial_update(
+        repo.pulp_href, {"remote": remote.pulp_href}
+    ).task
+    monitor_task(update_task)
+    repo = gem_repository_api_client.read(repo.pulp_href)
     repo2, _ = do_sync(repo=repo, remote=remote)
     assert repo2.latest_version_href == repo.latest_version_href
 

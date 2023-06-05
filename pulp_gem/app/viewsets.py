@@ -109,11 +109,9 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
     queryset = GemRepository.objects.all()
     serializer_class = GemRepositorySerializer
 
-    # This decorator is necessary since a sync operation is asyncrounous and returns
-    # the id and href of the sync task.
     @extend_schema(
-        description="Trigger an asynchronous task to sync content.",
-        summary="Sync from remote",
+        description="Trigger an asynchronous task to sync gem content.",
+        summary="Sync from a remote",
         responses={202: AsyncOperationResponseSerializer},
     )
     @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
@@ -121,16 +119,24 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin):
         """
         Dispatches a sync task.
         """
-        repository = self.get_object()
-        serializer = RepositorySyncURLSerializer(data=request.data, context={"request": request})
+        serializer = RepositorySyncURLSerializer(
+            data=request.data, context={"request": request, "repository_pk": pk}
+        )
         serializer.is_valid(raise_exception=True)
-        remote = serializer.validated_data.get("remote")
+
+        repository = self.get_object()
+        remote = serializer.validated_data.get("remote", repository.remote)
         mirror = serializer.validated_data.get("mirror", True)
 
         result = dispatch(
             tasks.synchronize,
-            exclusive_resources=[repository, remote],
-            kwargs={"remote_pk": remote.pk, "repository_pk": repository.pk, "mirror": mirror},
+            shared_resources=[remote],
+            exclusive_resources=[repository],
+            kwargs={
+                "remote_pk": str(remote.pk),
+                "repository_pk": str(repository.pk),
+                "mirror": mirror,
+            },
         )
         return OperationPostponedResponse(result, request)
 
