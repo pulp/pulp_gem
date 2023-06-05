@@ -87,6 +87,7 @@ class GemRepository(Repository):
 
     TYPE = "gem"
     CONTENT_TYPES = [GemContent]
+    REMOTE_TYPES = [GemRemote]
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
