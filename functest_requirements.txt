@@ -2,5 +2,5 @@ django
 dynaconf
 pulp-smash @ git+https://github.com/pulp/pulp-smash.git
 pulpcore-client
-pulp-gem-client==0.0.1b4.dev
+pulp-gem-client==0.0.1.dev
 pytest
