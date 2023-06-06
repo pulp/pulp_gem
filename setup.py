@@ -10,7 +10,7 @@ with open("README.rst") as f:
 
 setup(
     name="pulp-gem",
-    version="0.0.1b4.dev",
+    version="0.0.1.dev",
     description="Gemfile plugin for the Pulp Project",
     long_description=long_description,
     license="GPLv2+",
@@ -24,7 +24,7 @@ setup(
     classifiers=(
         "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
         "Operating System :: POSIX :: Linux",
-        "Development Status :: 4 - Beta",
+        "Development Status :: 5 - Production/Stable",
         "Framework :: Django",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
