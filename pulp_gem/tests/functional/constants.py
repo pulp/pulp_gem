@@ -26,17 +26,17 @@ GEM_REPO_PATH = urljoin(BASE_REPO_PATH, "gem/gem/")
 
 GEM_PUBLICATION_PATH = urljoin(BASE_PUBLICATION_PATH, "gem/gem/")
 
-# GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, 'gem/')
-GEM_FIXTURE_URL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/gems/repo/"
+GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "gem/")
 """The URL to a gem repository."""
 
-GEM_FIXTURE_COUNT = 3
+GEM_FIXTURE_COUNT = 4
 """The number of content units available at :data:`GEM_FIXTURE_URL`."""
+# This is 4 stable gems. There are also 2 prerelease gems not currently synced.
 
 GEM_FIXTURE_SUMMARY = {GEM_CONTENT_NAME: GEM_FIXTURE_COUNT}
 """The desired content summary after syncing :data:`GEM_FIXTURE_URL`."""
 
-GEM_URL = urljoin(GEM_FIXTURE_URL, "gems/panda-0.1.0.gem")
+GEM_URL = urljoin(GEM_FIXTURE_URL, "gems/amber-1.0.0.gem")
 """The URL to an gem file at :data:`GEM_FIXTURE_URL`."""
 
 # FIXME: replace this with your own fixture repository URL and metadata
