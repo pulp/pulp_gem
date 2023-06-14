@@ -1,10 +1,9 @@
 import logging
-import os
 
 from gettext import gettext as _
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urljoin
 
-from asgiref.sync import sync_to_async
+from django.conf import settings
 
 from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
 from pulpcore.plugin.stages import (
@@ -12,48 +11,20 @@ from pulpcore.plugin.stages import (
     DeclarativeContent,
     DeclarativeVersion,
     Stage,
-    ArtifactDownloader,
-    ArtifactSaver,
-    QueryExistingContents,
-    ContentSaver,
-    RemoteArtifactSaver,
 )
 
 from pulp_gem.app.models import GemContent, GemRemote
-from pulp_gem.specs import read_specs
+from pulp_gem.specs import (
+    NAME_REGEX,
+    VERSION_REGEX,
+    PRERELEASE_VERSION_REGEX,
+    read_versions,
+    read_info,
+    ruby_ver_includes,
+)
 
 
 log = logging.getLogger(__name__)
-
-
-class UpdateExistingContentArtifacts(Stage):
-    """
-    Stage to update declarative_artifacts from existing content.
-
-    A Stages API stage that sets existing
-    :class:`~pulpcore.plugin.models.Artifact` in
-    :class:`~pulpcore.plugin.stages.DeclarativeArtifact` instances from
-    :class:`~pulpcore.plugin.stages.DeclarativeContent` units if the respective
-    :class:`~pulpcore.plugin.models.Content` is already existing.
-    """
-
-    async def run(self):
-        """
-        The coroutine for this stage.
-
-        Returns:
-            The coroutine for this stage.
-
-        """
-        async for d_content in self.items():
-            if d_content.content.pk is not None:
-                for d_artifact in d_content.d_artifacts:
-                    content_artifact = await sync_to_async(
-                        d_content.content.contentartifact_set.select_related("artifact").get
-                    )(relative_path=d_artifact.relative_path)
-                    if content_artifact.artifact is not None:
-                        d_artifact.artifact = content_artifact.artifact
-            await self.put(d_content)
 
 
 def synchronize(remote_pk, repository_pk, mirror=False):
@@ -76,7 +47,7 @@ def synchronize(remote_pk, repository_pk, mirror=False):
         raise ValueError(_("A remote must have a url specified to synchronize."))
 
     first_stage = GemFirstStage(remote)
-    dv = GemDeclarativeVersion(first_stage, repository, mirror=mirror)
+    dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
     dv.create()
 
 
@@ -102,72 +73,81 @@ class GemFirstStage(Stage):
         # Interpret policy to download Artifacts or not
         deferred_download = self.remote.policy != Remote.IMMEDIATE
 
-        async with ProgressReport(message="Downloading Metadata") as progress:
-            parsed_url = urlparse(self.remote.url)
-            root_dir = parsed_url.path
-            specs_path = os.path.join(root_dir, "specs.4.8.gz")
-            specs_url = urlunparse(parsed_url._replace(path=specs_path))
-            downloader = self.remote.get_downloader(url=specs_url)
-            result = await downloader.run()
-            await progress.aincrement()
+        async with ProgressReport(
+            message="Downloading versions list", total=1
+        ) as pr_download_versions:
+            versions_url = urljoin(self.remote.url, "versions")
+            versions_downloader = self.remote.get_downloader(url=versions_url)
+            versions_result = await versions_downloader.run()
+            await pr_download_versions.aincrement()
 
-        async with ProgressReport(message="Parsing Metadata") as progress:
-            for key in read_specs(result.path):
-                relative_path = os.path.join("gems", key.name + "-" + key.version + ".gem")
-                path = os.path.join(root_dir, relative_path)
-                url = urlunparse(parsed_url._replace(path=path))
+        async with ProgressReport(message="Parsing versions list") as pr_parse_versions:
+            async with ProgressReport(message="Parsing versions info") as pr_parse_info:
+                async for name, versions, md5_sum in read_versions(versions_result.path):
+                    await pr_parse_versions.aincrement()
+                    if not NAME_REGEX.match(name):
+                        log.warn(f"Skipping invalid gem name: '{name}'.")
+                        continue
+                    if not self.remote.prereleases:
+                        versions = [version for version in versions if VERSION_REGEX.match(version)]
+                    else:
+                        versions = [
+                            version
+                            for version in versions
+                            if PRERELEASE_VERSION_REGEX.match(version)
+                        ]
+                    if self.remote.includes:
+                        if name not in self.remote.includes:
+                            continue
+                        version_requirements = self.remote.includes[name]
+                        if version_requirements is not None:
+                            versions = [
+                                version
+                                for version in versions
+                                if ruby_ver_includes(version_requirements, version)
+                            ]
+                    if self.remote.excludes:
+                        if name in self.remote.excludes:
+                            version_requirements = self.remote.excludes[name]
+                            if version_requirements is None:
+                                continue
+                            versions = [
+                                version
+                                for version in versions
+                                if not ruby_ver_includes(version_requirements, version)
+                            ]
+                    if not versions:
+                        continue
+                    info_url = urljoin(urljoin(self.remote.url, "info/"), name)
+                    if "md5" in settings.ALLOWED_CONTENT_CHECKSUMS:
+                        extra_kwargs = {"expected_digests": {"md5": md5_sum}}
+                    else:
+                        extra_kwargs = {}
+                        log.warn(f"Checksum of info file for '{name}' could not be validated.")
+                    info_downloader = self.remote.get_downloader(url=info_url, **extra_kwargs)
+                    info_result = await info_downloader.run()
+                    async for gem_info in read_info(info_result.path, versions):
+                        gem_info["name"] = name
+                        gem = GemContent(**gem_info)
+                        gem_path = gem.relative_path
+                        gem_url = urljoin(self.remote.url, gem_path)
+                        gemspec_path = gem.gemspec_path
+                        gemspec_url = urljoin(self.remote.url, gemspec_path)
 
-                spec_relative_path = os.path.join(
-                    "quick/Marshal.4.8", key.name + "-" + key.version + ".gemspec.rz"
-                )
-                spec_path = os.path.join(root_dir, spec_relative_path)
-                spec_url = urlunparse(parsed_url._replace(path=spec_path))
-                gem = GemContent(name=key.name, version=key.version)
-                da_gem = DeclarativeArtifact(
-                    artifact=Artifact(),
-                    url=url,
-                    relative_path=relative_path,
-                    remote=self.remote,
-                    deferred_download=deferred_download,
-                )
-                da_spec = DeclarativeArtifact(
-                    artifact=Artifact(),
-                    url=spec_url,
-                    relative_path=spec_relative_path,
-                    remote=self.remote,
-                    deferred_download=deferred_download,
-                )
-                dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_spec])
-                await progress.aincrement()
-                await self.put(dc)
-
-
-class GemDeclarativeVersion(DeclarativeVersion):
-    """
-    Custom implementation of Declarative version.
-    """
-
-    def pipeline_stages(self, new_version):
-        """
-        Build the list of pipeline stages feeding into the ContentUnitAssociation stage.
-
-        This is overwritten to create a custom pipeline.
-
-        Args:
-            new_version (:class:`~pulpcore.plugin.models.RepositoryVersion`): The
-                new repository version that is going to be built.
-
-        Returns:
-            list: List of :class:`~pulpcore.plugin.stages.Stage` instances
-
-        """
-        pipeline = [
-            self.first_stage,
-            QueryExistingContents(),
-            UpdateExistingContentArtifacts(),
-            ArtifactDownloader(),
-            ArtifactSaver(),
-            ContentSaver(),
-            RemoteArtifactSaver(),
-        ]
-        return pipeline
+                        da_gem = DeclarativeArtifact(
+                            artifact=Artifact(sha256=gem_info["checksum"]),
+                            url=gem_url,
+                            relative_path=gem_path,
+                            remote=self.remote,
+                            deferred_download=deferred_download,
+                        )
+                        da_gemspec = DeclarativeArtifact(
+                            artifact=Artifact(),
+                            url=gemspec_url,
+                            relative_path=gemspec_path,
+                            remote=self.remote,
+                            deferred_download=deferred_download,
+                        )
+                        dc = DeclarativeContent(content=gem, d_artifacts=[da_gem, da_gemspec])
+                        await pr_parse_info.aincrement()
+                        await self.put(dc)

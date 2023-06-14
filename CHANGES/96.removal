@@ -1,0 +1,3 @@
+Disabled synching without compact index format.
+Existing content will still be downloadable.
+There is a ``pulpcore-manager datarepair-shallow-gems`` command that will reindex content to the new format given their artifacts are persisted.

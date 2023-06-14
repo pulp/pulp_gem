@@ -84,7 +84,7 @@ if [ "$TEST" = "s3" ]; then
   sed -i -e '$a s3_test: true\
 minio_access_key: "'$MINIO_ACCESS_KEY'"\
 minio_secret_key: "'$MINIO_SECRET_KEY'"\
-pulp_scenario_settings: null\
+pulp_scenario_settings: {"allowed_content_checksums": ["md5", "sha224", "sha256", "sha384", "sha512"]}\
 ' vars/main.yaml
   export PULP_API_ROOT="/rerouted/djnd/"
 fi

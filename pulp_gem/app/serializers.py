@@ -1,19 +1,21 @@
 from gettext import gettext as _
+import tempfile
 
+import hashlib
 import os
 
+from django.db import IntegrityError
 from rest_framework.serializers import (
+    BooleanField,
     CharField,
     ChoiceField,
     FileField,
-    HyperlinkedRelatedField,
+    HStoreField,
     ValidationError,
 )
 
-from pulpcore.plugin.files import PulpTemporaryUploadedFile
-from pulpcore.plugin.models import Artifact, Publication, Remote, Repository, RepositoryVersion
+from pulpcore.plugin.models import Artifact, Publication, Remote, Repository
 from pulpcore.plugin.serializers import (
-    ArtifactSerializer,
     DetailRelatedField,
     MultipleArtifactContentSerializer,
     PublicationSerializer,
@@ -35,15 +37,17 @@ from pulp_gem.specs import analyse_gem
 
 
 def _artifact_from_data(raw_data):
-    tmpfile = PulpTemporaryUploadedFile(
-        "tmpfile", "application/octet-stream", len(raw_data), "", ""
-    )
-    tmpfile.write(raw_data)
+    sha256 = hashlib.sha256(raw_data).hexdigest()
+    artifact = Artifact.objects.filter(sha256=sha256).first()
+    if artifact:
+        return artifact
 
-    artifact_serializer = ArtifactSerializer(data={"file": tmpfile})
-    artifact_serializer.is_valid(raise_exception=True)
+    with tempfile.NamedTemporaryFile("wb", dir=".", delete=False) as tmpfile:
+        tmpfile.write(raw_data)
 
-    return artifact_serializer.save()
+    artifact = Artifact.init_and_validate(tmpfile.name, expected_digests={"sha256": sha256})
+    artifact.save()
+    return artifact
 
 
 class GemContentSerializer(MultipleArtifactContentSerializer):
@@ -63,15 +67,24 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         required=False,
         write_only=True,
     )
-    repository = HyperlinkedRelatedField(
+    repository = DetailRelatedField(
         help_text=_("A URI of a repository the new content unit should be associated with."),
         required=False,
         write_only=True,
+        view_name_pattern=r"repositories(-.*/.*)-detail",
         queryset=Repository.objects.all(),
-        view_name="repositories-detail",
     )
+    checksum = CharField(help_text=_("SHA256 checksum of the gem"), read_only=True)
     name = CharField(help_text=_("Name of the gem"), read_only=True)
     version = CharField(help_text=_("Version of the gem"), read_only=True)
+    prerelease = BooleanField(help_text=_("Whether the gem is a prerelease"), read_only=True)
+    dependencies = HStoreField(read_only=True)
+    required_ruby_version = CharField(
+        help_text=_("Required ruby version of the gem"), read_only=True
+    )
+    required_rubygems_version = CharField(
+        help_text=_("Required rubygems version of the gem"), read_only=True
+    )
 
     def __init__(self, *args, **kwargs):
         """Initializer for GemContentSerializer."""
@@ -98,26 +111,22 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         """Validate the GemContent data (deferred)."""
         artifact = data.pop("artifact")
 
-        name, version, spec_data = analyse_gem(artifact.file)
-        relative_path = os.path.join("gems", name + "-" + version + ".gem")
+        gem_info, spec_data = analyse_gem(artifact.file)
+        relative_path = os.path.join("gems", gem_info["name"] + "-" + gem_info["version"] + ".gem")
 
         spec_artifact = _artifact_from_data(spec_data)
-        spec_relative_path = os.path.join("quick/Marshal.4.8", name + "-" + version + ".gemspec.rz")
+        spec_relative_path = os.path.join(
+            "quick/Marshal.4.8", gem_info["name"] + "-" + gem_info["version"] + ".gemspec.rz"
+        )
 
-        data["name"] = name
-        data["version"] = version
+        data.update(gem_info)
         data["artifacts"] = {relative_path: artifact, spec_relative_path: spec_artifact}
-
-        # Validate uniqueness
-        content = GemContent.objects.filter(name=name, version=version)
-        if content.exists():
-            raise ValidationError(
-                _(
-                    "There is already a gem content with name '{name}' and version '{version}'."
-                ).format(name=name, version=version)
-            )
+        data["checksum"] = artifact.sha256
 
         return data
+
+    def retrieve(self, validated_data):
+        return GemContent.objects.filter(checksum=validated_data["checksum"]).first()
 
     def create(self, validated_data):
         """Save the GemContent unit.
@@ -125,13 +134,24 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         This must be used inside a task that locks on the Artifact and if given, the repository.
         """
         repository = validated_data.pop("repository", None)
-        content = super().create(validated_data)
+        content = self.retrieve(validated_data)
+        if content is None:
+            try:
+                content = super().create(validated_data)
+            except IntegrityError:
+                content = self.retrieve(validated_data)
+                if content is None:
+                    raise
+                content.touch()
+        else:
+            content.touch()
 
         if repository:
+            repository.cast()
             content_to_add = self.Meta.model.objects.filter(pk=content.pk)
 
             # create new repo version with uploaded package
-            with RepositoryVersion.create(repository) as new_version:
+            with repository.new_version() as new_version:
                 new_version.add_content(content_to_add)
         return content
 
@@ -140,8 +160,13 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
             "artifact",
             "file",
             "repository",
+            "checksum",
             "name",
             "version",
+            "prerelease",
+            "dependencies",
+            "required_ruby_version",
+            "required_rubygems_version",
         )
         model = GemContent
 
@@ -157,9 +182,12 @@ class GemRemoteSerializer(RemoteSerializer):
         choices=Remote.POLICY_CHOICES,
         default=Remote.IMMEDIATE,
     )
+    prereleases = BooleanField(default=False)
+    includes = HStoreField(required=False, allow_null=True)
+    excludes = HStoreField(required=False, allow_null=True)
 
     class Meta:
-        fields = RemoteSerializer.Meta.fields
+        fields = RemoteSerializer.Meta.fields + ("prereleases", "includes", "excludes")
         model = GemRemote
 
 

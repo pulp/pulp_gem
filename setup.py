@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 with open("requirements.txt") as requirements:
     requirements = requirements.readlines()
 
-with open("README.rst") as f:
+with open("README.md") as f:
     long_description = f.read()
 
 setup(
@@ -14,9 +14,9 @@ setup(
     description="Gemfile plugin for the Pulp Project",
     long_description=long_description,
     license="GPLv2+",
-    author="Matthias Dellweg",
-    author_email="dellweg@atix.de",
-    url="https://github.com/ATIX-AG/pulp_gem",
+    author="Pulp Project Developers",
+    author_email="pulp-dev@redhat.com",
+    url="https://pulpproject.org/",
     python_requires=">=3.8",
     install_requires=requirements,
     include_package_data=True,
@@ -32,4 +32,9 @@ setup(
         "Programming Language :: Python :: 3.7",
     ),
     entry_points={"pulpcore.plugin": ["pulp_gem = pulp_gem:default_app_config"]},
+    project_urls={
+        "Documentation": "https://docs.pulpproject.org/pulp_gem/",
+        "Source": "https://github.com/pulp/pulp_gem",
+        "Tracker": "https://github.com/pulp/pulp_gem/issues",
+    },
 )

@@ -48,7 +48,13 @@ pulp_scheme: https
 pulp_settings: null
 pulp_settings_azure: null
 pulp_settings_gcp: null
-pulp_settings_s3: null
+pulp_settings_s3:
+  allowed_content_checksums:
+  - md5
+  - sha224
+  - sha256
+  - sha384
+  - sha512
 pulp_settings_stream: null
 pulpprojectdotorg_key_id: null
 pydocstyle: true

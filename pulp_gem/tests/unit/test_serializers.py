@@ -7,6 +7,19 @@ from pulp_gem.app.serializers import GemContentSerializer
 
 from pulpcore.plugin.models import Artifact
 
+CHECKSUM_LEN = {
+    "md5": 32,
+    "sha1": 40,
+    "sha224": 56,
+    "sha256": 64,
+    "sha384": 96,
+    "sha512": 128,
+}
+
+
+def _checksums(char):
+    return {name: char * CHECKSUM_LEN[name] for name in settings.ALLOWED_CONTENT_CHECKSUMS}
+
 
 class TestGemContentSerializer(TestCase):
     """Test GemContentSerializer."""
@@ -14,20 +27,14 @@ class TestGemContentSerializer(TestCase):
     def setUp(self):
         """Set up the GemContentSerializer tests."""
         self.artifact = Artifact.objects.create(
-            sha224="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            sha256="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            sha384="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",  # noqa
-            sha512="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",  # noqa
             size=1024,
             file=SimpleUploadedFile("test_filename_a", b"test content_a"),
+            **_checksums("a"),
         )
         self.artifact2 = Artifact.objects.create(
-            sha224="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            sha256="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            sha384="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",  # noqa
-            sha512="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",  # noqa
             size=1024,
             file=SimpleUploadedFile("test_filename_b", b"test content_b"),
+            **_checksums("b"),
         )
 
     @patch("pulp_gem.app.serializers._artifact_from_data")
@@ -35,11 +42,11 @@ class TestGemContentSerializer(TestCase):
     def test_valid_data(self, ANALYZE_GEM, _ARTIFACT_FROM_DATA):
         """Test that the GemContentSerializer accepts valid data."""
         # Preparation
-        ANALYZE_GEM.return_value = ("testname", "1.2.3-test", "---\n...")
+        ANALYZE_GEM.return_value = ({"name": "testname", "version": "1.2.3-test"}, "---\n...")
         _ARTIFACT_FROM_DATA.return_value = self.artifact2
         data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
         serializer = GemContentSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
+        assert serializer.is_valid()
         # Verification
         ANALYZE_GEM.called_once_with(self.artifact)
         _ARTIFACT_FROM_DATA.called_once_with("---\n...")
@@ -47,14 +54,14 @@ class TestGemContentSerializer(TestCase):
     @patch("pulp_gem.app.serializers._artifact_from_data")
     @patch("pulp_gem.app.serializers.analyse_gem")
     def test_duplicate_data(self, ANALYZE_GEM, _ARTIFACT_FROM_DATA):
-        """Test that the GemContentSerializer does not accept data."""
+        """Test that the GemContentSerializer does accept duplicate data."""
         # Preparation
-        ANALYZE_GEM.return_value = ("testname", "1.2.3-test", "---\n...")
+        ANALYZE_GEM.return_value = ({"name": "testname", "version": "1.2.3-test"}, "---\n...")
         _ARTIFACT_FROM_DATA.return_value = self.artifact2
         data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
         serializer = GemContentSerializer(data=data)
-        self.assertTrue(serializer.is_valid())
+        assert serializer.is_valid()
         serializer.save()
         # Test
         serializer = GemContentSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
+        assert serializer.is_valid()
