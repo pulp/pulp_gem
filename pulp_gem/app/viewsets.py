@@ -42,7 +42,7 @@ class GemContentFilter(ContentFilter):
 
     class Meta:
         model = GemContent
-        fields = ["name", "version"]
+        fields = ["name", "version", "checksum", "prerelease"]
 
 
 class GemContentViewSet(SingleArtifactContentUploadViewSet):
