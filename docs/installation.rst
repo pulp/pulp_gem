@@ -1,35 +1,24 @@
 User Setup
 ==========
 
-All REST API examples below use `httpie <https://httpie.org/doc>`__ to
-perform the requests.
+All workflow examples use the Pulp CLI. Install and setup from PyPI:
 
 .. code-block:: bash
 
-    machine localhost
-    login admin
-    password admin
+    pip install pulp-cli[pygments] pulp-cli-gem
+    pulp config create -e
+    pulp status # Check that CLI can talk to Pulp
 
 If you configured the ``admin`` user with a different password, adjust the configuration
 accordingly. If you prefer to specify the username and password with each request, please see
-``httpie`` documentation on how to do that.
+``Pulp CLI`` documentation on how to do that.
 
 
-Install ``pulpcore``
---------------------
+Containerized Installation
+**************************
 
-Follow the `installation
-instructions <docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`__
-provided with pulpcore.
-
-Install plugin
---------------
-
-This document assumes that you have
-`installed pulpcore <https://docs.pulpproject.org/en/3.0/nightly/installation/instructions.html>`_
-into a the virtual environment ``pulpvenv``.
-
-Users should install from **either** PyPI or source.
+Follow the `Pulp in One Container <https://pulpproject.org/pulp-in-one-container/>`_ instructions to get started with Pulp by
+leveraging OCI images. Further details are discussed in the `pulpcore documentation <https://docs.pulpproject.org/pulpcore/installation/instructions.html>`_.
 
 From Source
 ***********
@@ -37,7 +26,7 @@ From Source
 .. code-block:: bash
 
    sudo -u pulp -i
-   source ~/pulpvenv/bin/activate
+   source ~/pulp/bin/activate
    cd pulp_gem
    pip install -e .
    django-admin runserver 24817
