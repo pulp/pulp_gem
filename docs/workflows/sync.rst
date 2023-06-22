@@ -7,82 +7,102 @@ their repository.
 Create a Repository
 -------------------
 
-Start by creating a new repository named "foo"::
+Start by creating a new repository named "foo"
 
-    $ http POST $BASE_ADDR/pulp/api/v3/repositories/gem/gem/ name=foo
+.. literalinclude:: ../_scripts/repo.sh
+   :language: bash
 
 Response::
 
     {
-        "pulp_href": "http://localhost:24817/pulp/api/v3/repositories/gem/gem/9b19ceb7-11e1-4309-9f97-bcbab2ae38b6/",
-        ...
+      "pulp_href": "/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/",
+      "pulp_created": "2023-06-22T20:54:27.113947Z",
+      "versions_href": "/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/versions/",
+      "pulp_labels": {},
+      "latest_version_href": "/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/versions/0/",
+      "name": "foo",
+      "description": null,
+      "retain_repo_versions": null,
+      "remote": null
     }
-
 
 Create a Remote
 ---------------
 
 Creating a remote object informs Pulp about an external content source.
 
-``$ http POST $BASE_ADDR/pulp/pulp/api/v3/remotes/gem/gem/ name='bar' url='http://some.url/somewhere/'``
+.. literalinclude:: ../_scripts/remote.sh
+   :language: bash
 
 Response::
 
-    {
-        "pulp_href": "http://localhost:24817/pulp/pulp/api/v3/remotes/gem/gem/ 9c757d65-3007-4884-ac5b-c2fd93873289/",
-        ...
-    }
+  {
+      "pulp_href": "/pulp/api/v3/remotes/gem/gem/0188e505-157c-7565-8474-e607e0dbc4a0/",
+      "pulp_created": "2023-06-22T21:31:35.676442Z",
+      "name": "gem",
+      "url": "https://index.rubygems.org",
+      "ca_cert": null,
+      "client_cert": null,
+      "tls_validation": true,
+      "proxy_url": null,
+      "pulp_labels": {},
+      "pulp_last_updated": "2023-06-22T21:31:35.676454Z",
+      "download_concurrency": null,
+      "max_retries": null,
+      "policy": "immediate",
+      "total_timeout": null,
+      "connect_timeout": null,
+      "sock_connect_timeout": null,
+      "sock_read_timeout": null,
+      "headers": null,
+      "rate_limit": null,
+      "hidden_fields": [...],
+      "prereleases": false,
+      "includes": {
+        "panda": null
+      },
+      "excludes": null
+  }
 
+.. note::
+
+    You can also not specify anything in `includes` and have Pulp try to sync all gems available on the remote.
+
+.. note::
+
+    `includes` and `excludes` fields are JSON dictionaries with the key being the gem name and the value being
+    the version specifier string, or `null` for syncing all versions.
 
 Sync repository foo with remote
 -------------------------------
 
 Use the remote object to kick off a synchronize task by specifying the repository to
-sync with. You are telling pulp to fetch content from the remote and add to the repository::
+sync with. You are telling pulp to fetch content from the remote and add to the repository
 
-    $ http POST $BASE_ADDR/pulp/api/v3/repositories/gem/gem/9b19ceb7-11e1-4309-9f97-bcbab2ae38b6/sync/' remote=$REMOTE_HREF
+.. literalinclude:: ../_scripts/sync.sh
+   :language: bash
 
-Response::
-
-    {
-        "pulp_href": "http://localhost:24817/pulp/api/v3/tasks/3896447a-2799-4818-a3e5-df8552aeb903/",
-        "task_id": "3896447a-2799-4818-a3e5-df8552aeb903"
-    }
-
-You can follow the progress of the task with a GET request to the task href. Notice that when the
-synchroinze task completes, it creates a new version, which is specified in ``created_resources``::
-
-    $  http GET $BASE_ADDR/pulp/api/v3/tasks/3896447a-2799-4818-a3e5-df8552aeb903/
-
-Response::
+Repository Version Show Response (when complete)::
 
     {
-        "pulp_href": "http://localhost:24817/pulp/api/v3/tasks/3896447a-2799-4818-a3e5-df8552aeb903/",
-        "pulp_created": "2018-05-01T17:17:46.558997Z",
-        "created_resources": [
-            "http://localhost:24817/pulp/api/v3/repositories/gem/gem/9b19ceb7-11e1-4309-9f97-bcbab2ae38b6/versions/6/"
-        ],
-        "error": null,
-        "finished_at": "2018-05-01T17:17:47.149123Z",
-        "parent": null,
-        "progress_reports": [
-            {
-                "done": 0,
-                "message": "Add Content",
-                "state": "completed",
-                "suffix": "",
-                "total": 0
-            },
-            {
-                "done": 0,
-                "message": "Remove Content",
-                "state": "completed",
-                "suffix": "",
-                "total": 0
-            }
-        ],
-        "spawned_tasks": [],
-        "started_at": "2018-05-01T17:17:46.644801Z",
-        "state": "completed",
-        "worker": "http://localhost:24817/pulp/api/v3/workers/eaffe1be-111a-421d-a127-0b8fa7077cf7/"
+      "pulp_href": "/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/versions/1/",
+      "pulp_created": "2023-06-22T21:40:00.488466Z",
+      "number": 1,
+      "repository": "/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/",
+      "base_version": null,
+      "content_summary": {
+        "added": {
+          "gem.gem": {
+            "count": 33,
+            "href": "/pulp/api/v3/content/gem/gem/?repository_version_added=/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/versions/1/"
+          }
+        },
+        "removed": {},
+        "present": {
+          "gem.gem": {
+            "count": 33,
+            "href": "/pulp/api/v3/content/gem/gem/?repository_version=/pulp/api/v3/repositories/gem/gem/0188e4e3-1429-7411-89d7-c87288edf51a/versions/1/"
+          }
+        }
+      }
     }
