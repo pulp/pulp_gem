@@ -6,5 +6,5 @@ class PulpGemPluginAppConfig(PulpPluginAppConfig):
 
     name = "pulp_gem.app"
     label = "gem"
-    version = "0.1.0"
+    version = "0.1.1.dev"
     python_package_name = "pulp-gem"
