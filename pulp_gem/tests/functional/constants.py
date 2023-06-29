@@ -29,7 +29,7 @@ GEM_PUBLICATION_PATH = urljoin(BASE_PUBLICATION_PATH, "gem/gem/")
 GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "gem/")
 """The URL to a gem repository."""
 
-GEM_FIXTURE_COUNT = 6
+GEM_FIXTURE_COUNT = 4
 """The number of content units available at :data:`GEM_FIXTURE_URL`."""
 # This is 4 stable gems. There are also 2 prerelease gems not currently synced.
 
