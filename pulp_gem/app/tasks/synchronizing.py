@@ -85,16 +85,18 @@ class GemFirstStage(Stage):
             async with ProgressReport(message="Parsing versions info") as pr_parse_info:
                 async for name, versions, md5_sum in read_versions(versions_result.path):
                     await pr_parse_versions.aincrement()
-                    if not NAME_REGEX.match(name):
+                    if not NAME_REGEX.fullmatch(name):
                         log.warn(f"Skipping invalid gem name: '{name}'.")
                         continue
                     if not self.remote.prereleases:
-                        versions = [version for version in versions if VERSION_REGEX.match(version)]
+                        versions = [
+                            version for version in versions if VERSION_REGEX.fullmatch(version)
+                        ]
                     else:
                         versions = [
                             version
                             for version in versions
-                            if PRERELEASE_VERSION_REGEX.match(version)
+                            if PRERELEASE_VERSION_REGEX.fullmatch(version)
                         ]
                     if self.remote.includes:
                         if name not in self.remote.includes:
