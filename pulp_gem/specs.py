@@ -101,7 +101,7 @@ async def read_versions(relative_path):
             results[name] = (entry[0] + versions, md5_sum)
     for name, (versions, md5_sum) in results.items():
         # Sanitize name
-        if not NAME_REGEX.match(name):
+        if not NAME_REGEX.fullmatch(name):
             raise ValueError(f"Invalid gem name: {name}")
         yield name, versions, md5_sum
 
@@ -124,9 +124,9 @@ async def read_info(relative_path, versions):
             if version not in versions:
                 continue
             # Sanitize version
-            if VERSION_REGEX.match(version):
+            if VERSION_REGEX.fullmatch(version):
                 gem_info["prerelease"] = False
-            elif PRERELEASE_VERSION_REGEX.match(version):
+            elif PRERELEASE_VERSION_REGEX.fullmatch(version):
                 gem_info["prerelease"] = True
             else:
                 raise ValueError(f"Invalid version string: {version}")
@@ -209,12 +209,12 @@ def analyse_gem(file_obj):
         "version": data.values["version"].values["version"],
     }
     # Sanitize name
-    if not NAME_REGEX.match(gem_info["name"]):
+    if not NAME_REGEX.fullmatch(gem_info["name"]):
         raise ValueError(f"Invalid gem name: {gem_info['name']}")
     # Sanitize version
-    if VERSION_REGEX.match(gem_info["version"]):
+    if VERSION_REGEX.fullmatch(gem_info["version"]):
         gem_info["prerelease"] = False
-    elif PRERELEASE_VERSION_REGEX.match(gem_info["version"]):
+    elif PRERELEASE_VERSION_REGEX.fullmatch(gem_info["version"]):
         gem_info["prerelease"] = True
     else:
         raise ValueError(f"Invalid version string: {gem_info['version']}")
