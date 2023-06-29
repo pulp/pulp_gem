@@ -13,6 +13,19 @@ Changelog
 
 .. towncrier release notes start
 
+0.1.1 (2023-06-29)
+==================
+
+Bugfixes
+--------
+
+- Fixed the detection of prerelease versions.
+  `#114 <https://github.com/pulp/pulp_gem/issues/114>`__
+
+
+----
+
+
 0.1.0 (2023-06-26)
 ==================
 
