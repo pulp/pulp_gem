@@ -21,8 +21,6 @@ PIP_REQUIREMENTS=("pulp-cli")
 if [[ "$TEST" = "docs" || "$TEST" = "publish" ]]
 then
   PIP_REQUIREMENTS+=("-r" "doc_requirements.txt")
-  git clone https://github.com/pulp/pulpcore.git ../pulpcore
-  PIP_REQUIREMENTS+=("psycopg2-binary" "-r" "../pulpcore/doc_requirements.txt")
 fi
 
 pip install ${PIP_REQUIREMENTS[*]}
