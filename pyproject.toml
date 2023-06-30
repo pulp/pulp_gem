@@ -19,6 +19,7 @@ exclude = '''
   | build
   | dist
   | migrations
+  | docs
 )/
 '''
 
