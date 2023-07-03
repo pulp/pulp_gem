@@ -74,7 +74,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: pulp_gem
-          ref: '1.0'
+          ref: '0.1'
           fetch-depth: 0
 
       - name: Run update
@@ -89,10 +89,10 @@ jobs:
           path: pulp_gem
           committer: pulpbot <pulp-infra@redhat.com>
           author: pulpbot <pulp-infra@redhat.com>
-          title: 'Update CI files for branch 1.0'
+          title: 'Update CI files for branch 0.1'
           body: '[noissue]'
-          branch: 'update-ci/1.0'
-          base: '1.0'
+          branch: 'update-ci/0.1'
+          base: '0.1'
           commit-message: |
             Update CI files
 
