@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import aiofiles
+import datetime
 import zlib
 import gzip
 import re
@@ -17,8 +18,7 @@ NAME_REGEX = re.compile(r"[\w\.-]+")
 VERSION_REGEX = re.compile(r"\d+(?:\.\d+)*")
 PRERELEASE_VERSION_REGEX = NAME_REGEX
 
-# Natural key.
-Key = namedtuple("Key", ("name", "version"))
+Key = namedtuple("Key", ("name", "version", "platform"), defaults=["ruby"])
 
 
 def _ver_tokens(version):
@@ -149,36 +149,142 @@ async def read_info(relative_path, versions):
             yield gem_info
 
 
-def read_specs(relative_path):
-    """
-    Read rubygem specs from file.
-    """
-    try:
-        with gzip.GzipFile(relative_path, "rb") as fd:
-            data = rubymarshal.reader.load(fd)
-    except OSError:
-        with open(relative_path, "rb") as fd:
-            data = rubymarshal.reader.load(fd)
-    for item in data:
-        name = item[0]
-        if name.__class__ is bytes:
-            name = name.decode()
-        version = item[1].values[0]
-        if version.__class__ is bytes:
-            version = version.decode()
-        yield Key(name, version)
+class GemVersion(rubymarshal.classes.UsrMarshal):
+    ruby_class_name = "Gem::Version"
+
+    @classmethod
+    def yaml_constructor(cls, loader, node):
+        result = cls()
+        yield result
+        values = loader.construct_mapping(node, deep=True)
+        result.marshal_load([values["version"]])
+
+    @property
+    def version(self):
+        return self._private_data[0]
+
+    def __repr__(self):
+        return f"{self.ruby_class_name}('{self.version}')"
+
+    def __str__(self):
+        return f"{self.ruby_class_name}('{self.version}')"
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self._private_data == self._private_data
 
 
-def write_specs(keys, relative_path):
-    """
-    Write rubygem specs to file.
-    """
-    specs = [
-        [e.name, rubymarshal.classes.UsrMarshal("Gem::Version", [e.version]), "ruby"] for e in keys
+class GemSpecification(rubymarshal.classes.UserDef):
+    ruby_class_name = "Gem::Specification"
+
+    FIELDS = [
+        "rubygems_version",
+        "specification_version",
+        "name",
+        "version",
+        "date",
+        "summary",
+        "required_ruby_version",
+        "required_rubygems_version",
+        "original_platform",
+        "dependencies",
+        "rubyforge_project",  # This got removed...
+        "email",
+        "authors",
+        "description",
+        "homepage",
+        "has_rdoc",
+        "new_platform",
+        "licenses",
+        "metadata",
     ]
-    # write uncompressed version
-    with open(relative_path, "wb") as fd:
-        rubymarshal.writer.write(fd, specs)
+
+    @classmethod
+    def yaml_constructor(cls, loader, node):
+        result = cls()
+        yield result
+
+        value = loader.construct_mapping(node, deep=True)
+        platform = value.pop("platform")
+        value.setdefault("original_platform", platform)
+        value.setdefault("new_platform", platform)
+        value.setdefault("has_rdoc", True)
+        value.setdefault("rubyforge_project", "")
+        value["date"] = RubyTime.from_datetime(value["date"])
+        result._private_data = {key: value.get(key) for key in cls.FIELDS}
+
+    def _load(self, data):
+        arguments = rubymarshal.reader.loads(data)
+        self._private_data = {name: value for name, value in zip(self.FIELDS, arguments)}
+
+    def _dump(self):
+        count = len(self._private_data)
+        arguments = [
+            self._private_data[name] if name is not None else "" for name in self.FIELDS[:count]
+        ]
+        return rubymarshal.writer.writes(arguments)
+
+
+class GemRequirement(rubymarshal.classes.UsrMarshal):
+    ruby_class_name = "Gem::Requirement"
+
+    @classmethod
+    def yaml_constructor(cls, loader, node):
+        result = cls()
+        yield result
+        values = loader.construct_mapping(node, deep=True)
+        result.marshal_load([values["requirements"]])
+
+    @property
+    def requirements(self):
+        return self._private_data[0]
+
+    def __repr__(self):
+        return f"{self.ruby_class_name}('{self.requirements}')"
+
+    def __str__(self):
+        return f"{self.ruby_class_name}('{self.requirements}')"
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self._private_data == self._private_data
+
+    def to_s(self):
+        return "&".join([f"{req[0]} {req[1].version}" for req in self.requirements])
+
+
+class GemDependency(rubymarshal.classes.RubyObject):
+    ruby_class_name = "Gem::Dependency"
+
+    @classmethod
+    def yaml_constructor(cls, loader, node):
+        result = cls()
+        yield result
+        values = loader.construct_mapping(node, deep=True)
+        result.attributes = {f"@{key}": value for key, value in values.items()}
+        result.attributes["@type"] = rubymarshal.classes.Symbol(result.attributes["@type"][1:])
+
+
+class RubyTime(rubymarshal.classes.UserDef):
+    ruby_class_name = "Time"
+
+    @classmethod
+    def from_datetime(cls, value):
+        year_val = value.year - 1900
+        month_val = value.month - 1
+        assert 0 <= year_val <= 0xFFFF
+        result = cls(attributes={"zone": value.tzname()})
+        p = 0x80000000 | year_val << 14 | month_val << 10 | value.day << 5 | value.hour
+        if value.tzinfo is datetime.timezone.utc:
+            p |= 0x40000000
+        s = value.minute << 26 | value.second << 20 | value.microsecond
+        result._private_data = p.to_bytes(4, "little") + s.to_bytes(4, "little")
+        return result
+
+
+rubymarshal.classes.registry.register(GemVersion)
+rubymarshal.classes.registry.register(GemSpecification)
+rubymarshal.classes.registry.register(GemRequirement)
+rubymarshal.classes.registry.register(GemDependency)
+rubymarshal.classes.registry.register(RubyTime)
 
 
 class RubyMarshalYamlLoader(yaml.SafeLoader):
@@ -186,15 +292,23 @@ class RubyMarshalYamlLoader(yaml.SafeLoader):
 
 
 def _yaml_ruby_constructor(loader, suffix, node):
-    value = loader.construct_mapping(node)
-    return rubymarshal.classes.UsrMarshal(suffix, value)
+    try:
+        return rubymarshal.classes.registry[suffix].yaml_constructor(loader, node)
+    except KeyError:
+        raise NotImplementedError(f"Unknown ruby class {suffix}.")
 
 
 yaml.add_multi_constructor("!ruby/object:", _yaml_ruby_constructor, Loader=RubyMarshalYamlLoader)
 
 
-def _collapse_requirement(data):
-    return "&".join([f"{req[0]} {req[1].values['version']}" for req in data.values["requirements"]])
+def write_specs(keys, relative_path):
+    """
+    Write rubygem specs to file.
+    """
+    specs = [[e.name, GemVersion(e.version), "ruby"] for e in keys]
+    # write uncompressed version
+    with open(relative_path, "wb") as fd:
+        rubymarshal.writer.write(fd, specs)
 
 
 def analyse_gem(file_obj):
@@ -205,8 +319,9 @@ def analyse_gem(file_obj):
         with archive.extractfile("metadata.gz") as md_file:
             data = yaml.load(gzip.decompress(md_file.read()), Loader=RubyMarshalYamlLoader)
     gem_info = {
-        "name": data.values["name"],
-        "version": data.values["version"].values["version"],
+        "name": data._private_data["name"],
+        "version": data._private_data["version"].version,
+        # "platform": data.platform,
     }
     # Sanitize name
     if not NAME_REGEX.fullmatch(gem_info["name"]):
@@ -219,14 +334,11 @@ def analyse_gem(file_obj):
     else:
         raise ValueError(f"Invalid version string: {gem_info['version']}")
     for key in ("required_ruby_version", "required_rubygems_version"):
-        if (requirement := data.values.get(key)) is not None:
-            gem_info[key] = _collapse_requirement(requirement)
-    if (dependencies := data.values.get("dependencies")) is not None:
+        if (requirement := data._private_data.get(key)) is not None:
+            gem_info[key] = requirement.to_s()
+    if (dependencies := data._private_data.get("dependencies")) is not None:
         gem_info["dependencies"] = {
-            dep.values["name"]: _collapse_requirement(dep.values["requirement"])
-            for dep in dependencies
+            dep.attributes["@name"]: dep.attributes["@requirement"].to_s() for dep in dependencies
         }
-    # Workaroud
-    del data.values["date"]
     zdata = zlib.compress(rubymarshal.writer.writes(data))
     return gem_info, zdata
