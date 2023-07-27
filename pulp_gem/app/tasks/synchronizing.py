@@ -1,5 +1,6 @@
 import logging
 
+from aiohttp import ClientConnectionError
 from gettext import gettext as _
 from urllib.parse import urljoin
 
@@ -16,11 +17,11 @@ from pulpcore.plugin.stages import (
 from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import (
     NAME_REGEX,
-    VERSION_REGEX,
     PRERELEASE_VERSION_REGEX,
     read_versions,
     read_info,
     ruby_ver_includes,
+    split_ext_version,
 )
 
 
@@ -72,54 +73,118 @@ class GemFirstStage(Stage):
         """
         # Interpret policy to download Artifacts or not
         deferred_download = self.remote.policy != Remote.IMMEDIATE
+        remote_url = self.remote.url
+
+        # Read filters from remote
+        includes = self.remote.includes
+        excludes = self.remote.excludes
+        prereleases = self.remote.prereleases
 
         async with ProgressReport(
             message="Downloading versions list", total=1
         ) as pr_download_versions:
-            versions_url = urljoin(self.remote.url, "versions")
+            versions_url = urljoin(remote_url, "versions")
             versions_downloader = self.remote.get_downloader(url=versions_url)
-            versions_result = await versions_downloader.run()
+            try:
+                versions_result = await versions_downloader.run()
+            except ClientConnectionError as e:
+                raise Exception(f"Could not connect to host {e.host}")
             await pr_download_versions.aincrement()
 
         async with ProgressReport(message="Parsing versions list") as pr_parse_versions:
             async with ProgressReport(message="Parsing versions info") as pr_parse_info:
-                async for name, versions, md5_sum in read_versions(versions_result.path):
+                async for name, ext_versions, md5_sum in read_versions(versions_result.path):
                     await pr_parse_versions.aincrement()
+
+                    # Skip conditions based on the gem name
+                    # =====================================
                     if not NAME_REGEX.fullmatch(name):
                         log.warn(f"Skipping invalid gem name: '{name}'.")
                         continue
-                    if not self.remote.prereleases:
-                        versions = [
-                            version for version in versions if VERSION_REGEX.fullmatch(version)
-                        ]
-                    else:
-                        versions = [
-                            version
-                            for version in versions
-                            if PRERELEASE_VERSION_REGEX.fullmatch(version)
-                        ]
-                    if self.remote.includes:
-                        if name not in self.remote.includes:
+                    if includes is not None:
+                        if name not in includes:
                             continue
-                        version_requirements = self.remote.includes[name]
-                        if version_requirements is not None:
-                            versions = [
-                                version
-                                for version in versions
-                                if ruby_ver_includes(version_requirements, version)
-                            ]
-                    if self.remote.excludes:
-                        if name in self.remote.excludes:
-                            version_requirements = self.remote.excludes[name]
-                            if version_requirements is None:
-                                continue
-                            versions = [
-                                version
-                                for version in versions
-                                if not ruby_ver_includes(version_requirements, version)
-                            ]
-                    if not versions:
+                        include_versions = includes[name]
+                    else:
+                        include_versions = None
+                    if excludes is not None and name in excludes:
+                        exclude_versions = excludes[name]
+                        if exclude_versions is None:
+                            continue
+                    else:
+                        exclude_versions = None
+
+                    # Skip conditions based on the gem version
+                    # ========================================
+
+                    # Keep a list to track the skipped versions for logging.
+                    kept_versions = set(ext_versions)
+                    # The list 'ext_versions' contains "{version}[-{platform}]" entries!
+                    # This dict is like a set of ext_versions with payload dict on
+                    # {version, platform, prerelease}.
+                    versions_info = {
+                        ext_version: split_ext_version(ext_version) for ext_version in ext_versions
+                    }
+                    # Sanitize versions.
+                    versions_info = {
+                        k: v
+                        for k, v in versions_info.items()
+                        if PRERELEASE_VERSION_REGEX.fullmatch(v["version"])
+                    }
+                    if len(kept_versions) > len(versions_info):
+                        log.warn(
+                            _("Skipped invalid versions for '%s': %s"),
+                            name,
+                            kept_versions - set(versions_info.keys()),
+                        )
+                        kept_versions = set(versions_info.keys())
+
+                    if not prereleases:
+                        # Prerelease versions are already sanitized.
+                        # But for the sake of logging we handle them differently.
+                        versions_info = {
+                            k: v for k, v in versions_info.items() if not v["prerelease"]
+                        }
+                        if len(kept_versions) > len(versions_info):
+                            log.debug(
+                                _("Skipped prerelease versions for '%s': %s"),
+                                name,
+                                kept_versions - set(versions_info.keys()),
+                            )
+                            kept_versions = set(versions_info.keys())
+
+                    if include_versions is not None:
+                        versions_info = {
+                            k: v
+                            for k, v in versions_info.items()
+                            if ruby_ver_includes(include_versions, v["version"])
+                        }
+                        if len(kept_versions) > len(versions_info):
+                            log.debug(
+                                _("Skipped versions for '%s' include filter: %s"),
+                                name,
+                                kept_versions - set(versions_info.keys()),
+                            )
+                            kept_versions = set(versions_info.keys())
+
+                    if exclude_versions is not None:
+                        versions_info = {
+                            k: v
+                            for k, v in versions_info.items()
+                            if not ruby_ver_includes(exclude_versions, v["version"])
+                        }
+                        if len(kept_versions) > len(versions_info):
+                            log.debug(
+                                _("Skipped versions for '%s' exclude filter: %s"),
+                                name,
+                                kept_versions - set(versions_info.keys()),
+                            )
+                            kept_versions = set(versions_info.keys())
+
+                    if not versions_info:
+                        log.debug(_("No version left for '%s'; skip reading the info file."), name)
                         continue
+
                     info_url = urljoin(urljoin(self.remote.url, "info/"), name)
                     if "md5" in settings.ALLOWED_CONTENT_CHECKSUMS:
                         extra_kwargs = {"expected_digests": {"md5": md5_sum}}
@@ -128,13 +193,13 @@ class GemFirstStage(Stage):
                         log.warn(f"Checksum of info file for '{name}' could not be validated.")
                     info_downloader = self.remote.get_downloader(url=info_url, **extra_kwargs)
                     info_result = await info_downloader.run()
-                    async for gem_info in read_info(info_result.path, versions):
+                    async for gem_info in read_info(info_result.path, versions_info):
                         gem_info["name"] = name
                         gem = GemContent(**gem_info)
                         gem_path = gem.relative_path
-                        gem_url = urljoin(self.remote.url, gem_path)
+                        gem_url = urljoin(remote_url, gem_path)
                         gemspec_path = gem.gemspec_path
-                        gemspec_url = urljoin(self.remote.url, gemspec_path)
+                        gemspec_url = urljoin(remote_url, gemspec_path)
 
                         da_gem = DeclarativeArtifact(
                             artifact=Artifact(sha256=gem_info["checksum"]),

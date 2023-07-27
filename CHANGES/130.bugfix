@@ -1,0 +1,1 @@
+Added a datarepair-gemspec-platform command to regenerate the gemspec artifacts and properly set the platform attribute on existing gems.

@@ -6,7 +6,6 @@ import os
 import shutil
 
 from gettext import gettext as _
-from packaging import version
 
 from django.conf import settings
 from django.core.files import File
@@ -22,7 +21,7 @@ from pulpcore.plugin.models import (
 )
 
 from pulp_gem.app.models import GemContent, GemPublication
-from pulp_gem.specs import write_specs, Key
+from pulp_gem.specs import ruby_ver_cmp, write_specs, GemKey
 
 
 log = logging.getLogger(__name__)
@@ -122,20 +121,22 @@ def publish(repository_version_pk):
         gemspecs = []
         for content in (
             GemContent.objects.filter(pk__in=publication.repository_version.content)
-            .only("name", "version")
+            .only("name", "version", "platform", "prerelease")
             .order_by("-pulp_created")
             .iterator()
         ):
             if content.prerelease:
-                prerelease_specs.append(Key(content.name, content.version))
+                prerelease_specs.append(GemKey(content.name, content.version, content.platform))
             else:
-                specs.append(Key(content.name, content.version))
-                old_ver = latest_versions.get(content.name)
-                if old_ver is None or version.parse(old_ver) < version.parse(content.version):
-                    latest_versions[content.name] = content.version
+                specs.append(GemKey(content.name, content.version, content.platform))
+                old_ver = latest_versions.get((content.name, content.platform))
+                if old_ver is None or ruby_ver_cmp(old_ver, content.version) < 0:
+                    latest_versions[(content.name, content.platform)] = content.version
             gems.append(content.relative_path)
             gemspecs.append(content.gemspec_path)
-        latest_specs = [Key(name, ver) for name, ver in latest_versions.items()]
+        latest_specs = [
+            GemKey(name, ver, platform) for (name, platform), ver in latest_versions.items()
+        ]
 
         _publish_specs(specs, "specs.4.8", publication)
         _publish_specs(latest_specs, "latest_specs.4.8", publication)
@@ -150,16 +151,18 @@ def publish(repository_version_pk):
         os.mkdir("info")
         for name in names_qs:
             lines = []
+            version_list = []
             for gem in gems_qs.filter(name=name):
                 deps = ",".join((f"{key}:{value}" for key, value in gem.dependencies.items()))
-                line = f"{gem.version} {deps}|checksum:{gem.checksum}"
+                line = f"{gem.ext_version} {deps}|checksum:{gem.checksum}"
                 if gem.required_ruby_version:
                     line += f",ruby:{gem.required_ruby_version}"
                 if gem.required_rubygems_version:
                     line += f",rubygems:{gem.required_rubygems_version}"
                 lines.append(line)
+                version_list.append(gem.ext_version)
             info_metadata = _publish_compact_index(lines, f"info/{name}", publication)
-            versions = ",".join(gems_qs.filter(name=name).values_list("version", flat=True))
+            versions = ",".join(version_list)
             if "md5" in settings.ALLOWED_CONTENT_CHECKSUMS:
                 md5_sum = info_metadata._artifacts.first().md5
             else:

@@ -18,7 +18,7 @@ NAME_REGEX = re.compile(r"[\w\.-]+")
 VERSION_REGEX = re.compile(r"\d+(?:\.\d+)*")
 PRERELEASE_VERSION_REGEX = NAME_REGEX
 
-Key = namedtuple("Key", ("name", "version", "platform"), defaults=["ruby"])
+GemKey = namedtuple("GemKey", ("name", "version", "platform"))
 
 
 def _ver_tokens(version):
@@ -81,6 +81,16 @@ def ruby_ver_includes(requirements, version):
     return True
 
 
+def split_ext_version(ext_version):
+    """Returns the tuple (version, platform, prerelease)."""
+    if "-" in ext_version:
+        version, platform = ext_version.split("-", maxsplit=1)
+    else:
+        version, platform = ext_version, "ruby"
+    prerelease = not VERSION_REGEX.fullmatch(version)
+    return {"version": version, "platform": platform, "prerelease": prerelease}
+
+
 async def read_versions(relative_path):
     # File starts with:
     #   created_at: <timestamp>
@@ -95,18 +105,23 @@ async def read_versions(relative_path):
                 continue
             if preamble:
                 continue
-            name, versions, md5_sum = line.split(" ", maxsplit=2)
-            versions = versions.split(",")
+            name, versions_str, md5_sum = line.split(" ", maxsplit=2)
+            ext_versions = versions_str.split(",")
             entry = results.get(name) or ([], "")
-            results[name] = (entry[0] + versions, md5_sum)
-    for name, (versions, md5_sum) in results.items():
+            results[name] = (entry[0] + ext_versions, md5_sum)
+    for name, (ext_versions, md5_sum) in results.items():
         # Sanitize name
         if not NAME_REGEX.fullmatch(name):
             raise ValueError(f"Invalid gem name: {name}")
-        yield name, versions, md5_sum
+        yield name, ext_versions, md5_sum
 
 
-async def read_info(relative_path, versions):
+async def read_info(relative_path, versions_info):
+    """
+    Emit gem_info entries from the info file when they exist in versions_info.
+
+    The resulting gem_info dicts are missing the "name" field.
+    """
     # File starts with:
     #   ---
     async with aiofiles.open(relative_path, mode="r") as fp:
@@ -118,19 +133,12 @@ async def read_info(relative_path, versions):
                 continue
             if preamble:
                 continue
-            gem_info = {}
             front, back = line.split("|")
-            version, dependencies = front.split(" ", maxsplit=1)
-            if version not in versions:
+            ext_version, dependencies = front.split(" ", maxsplit=1)
+            if ext_version not in versions_info:
                 continue
-            # Sanitize version
-            if VERSION_REGEX.fullmatch(version):
-                gem_info["prerelease"] = False
-            elif PRERELEASE_VERSION_REGEX.fullmatch(version):
-                gem_info["prerelease"] = True
-            else:
-                raise ValueError(f"Invalid version string: {version}")
-            gem_info["version"] = version
+
+            gem_info = versions_info[ext_version]  # version, platform, prerelease
             dependencies = dependencies.strip()
             if dependencies:
                 gem_info["dependencies"] = dict(
@@ -211,6 +219,10 @@ class GemSpecification(rubymarshal.classes.UserDef):
         value.setdefault("rubyforge_project", "")
         value["date"] = RubyTime.from_datetime(value["date"])
         result._private_data = {key: value.get(key) for key in cls.FIELDS}
+
+    @property
+    def platform(self):
+        return self._private_data["new_platform"]
 
     def _load(self, data):
         arguments = rubymarshal.reader.loads(data)
@@ -301,11 +313,11 @@ def _yaml_ruby_constructor(loader, suffix, node):
 yaml.add_multi_constructor("!ruby/object:", _yaml_ruby_constructor, Loader=RubyMarshalYamlLoader)
 
 
-def write_specs(keys, relative_path):
+def write_specs(gem_keys, relative_path):
     """
     Write rubygem specs to file.
     """
-    specs = [[e.name, GemVersion(e.version), "ruby"] for e in keys]
+    specs = [[e.name, GemVersion(e.version), e.platform] for e in gem_keys]
     # write uncompressed version
     with open(relative_path, "wb") as fd:
         rubymarshal.writer.write(fd, specs)
@@ -314,6 +326,8 @@ def write_specs(keys, relative_path):
 def analyse_gem(file_obj):
     """
     Extract name, version and specdata from gemfile.
+
+    The resulting gem_info is missing the checksum field.
     """
     with TarFile(fileobj=file_obj) as archive:
         with archive.extractfile("metadata.gz") as md_file:
@@ -321,7 +335,7 @@ def analyse_gem(file_obj):
     gem_info = {
         "name": data._private_data["name"],
         "version": data._private_data["version"].version,
-        # "platform": data.platform,
+        "platform": data.platform,
     }
     # Sanitize name
     if not NAME_REGEX.fullmatch(gem_info["name"]):

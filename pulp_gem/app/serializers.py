@@ -77,6 +77,7 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
     checksum = CharField(help_text=_("SHA256 checksum of the gem"), read_only=True)
     name = CharField(help_text=_("Name of the gem"), read_only=True)
     version = CharField(help_text=_("Version of the gem"), read_only=True)
+    platform = CharField(help_text=_("Platform of the gem"), read_only=True)
     prerelease = BooleanField(help_text=_("Whether the gem is a prerelease"), read_only=True)
     dependencies = HStoreField(read_only=True)
     required_ruby_version = CharField(
@@ -163,6 +164,7 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
             "checksum",
             "name",
             "version",
+            "platform",
             "prerelease",
             "dependencies",
             "required_ruby_version",

@@ -60,7 +60,7 @@ def test_pull_through_install(
     remote2 = gem_remote_factory()
     distribution2 = gem_distribution_factory(remote=remote2.pulp_href)
 
-    for dis, gem in zip((distribution, distribution2), ("a", "beryl")):
+    for dis, gem in ((distribution, "a"), (distribution2, "beryl")):
         cmd = ["gem", "i", "--remote", "--clear-sources", "-s", dis.base_url, gem, "-v", "0.1.0"]
 
         out = subprocess.run(cmd, stdout=subprocess.PIPE)
