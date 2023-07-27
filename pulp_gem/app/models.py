@@ -58,18 +58,17 @@ class GemContent(Content):
 
     Content of this type represents a ruby gem file
     with its spec data.
-
-    Fields:
-        name (str): The name of the gem.
-        version (str): The version of the gem.
-
     """
 
     TYPE = "gem"
-    repo_key_fields = ("name", "version")
+    repo_key_fields = ("name", "version", "platform")
 
     name = models.TextField(blank=False, null=False)
     version = models.TextField(blank=False, null=False)
+    # `null` on `platform is allowed for zero downtime upgrade from version 0.1.*.
+    # Change this to `null=False` in a version no earlier than 0.3.0.
+    # See also `ext_version` and the datarepair-gemspec-platform command.
+    platform = models.TextField(blank=False, null=True)
     checksum = models.CharField(max_length=64, null=False, db_index=True)
     prerelease = models.BooleanField(default=False)
     dependencies = HStoreField(default=dict)
@@ -79,12 +78,22 @@ class GemContent(Content):
     @property
     def relative_path(self):
         """The relative path this gem is stored under for the content app."""
-        return f"gems/{self.name}-{self.version}.gem"
+        return f"gems/{self.name}-{self.ext_version}.gem"
 
     @property
     def gemspec_path(self):
         """The path for this gem's gemspec for the content app."""
-        return f"quick/Marshal.4.8/{self.name}-{self.version}.gemspec.rz"
+        return f"quick/Marshal.4.8/{self.name}-{self.ext_version}.gemspec.rz"
+
+    @property
+    def ext_version(self):
+        """The version for this gem with the appended platform if not "ruby"."""
+        # Remove the `None` with the change to the platform column.
+        if self.platform is None or self.platform == "ruby":
+            platform_suffix = ""
+        else:
+            platform_suffix = f"-{self.platform}"
+        return f"{self.version}{platform_suffix}"
 
     @staticmethod
     def init_from_artifact_and_relative_path(artifact, relative_path):
@@ -102,6 +111,9 @@ class GemContent(Content):
         # Spec artifact will be on-demand at this point
         artifacts = {relative_path: artifact, spec_relative_path: None}
         return content, artifacts
+
+    def __str__(self):
+        return f"<GemContent {self.name}-{self.ext_version}>"
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
