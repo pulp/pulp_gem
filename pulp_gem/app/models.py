@@ -177,7 +177,7 @@ class GemRepository(Repository):
     """
 
     TYPE = "gem"
-    CONTENT_TYPES = [GemContent, ShallowGemContent]
+    CONTENT_TYPES = [GemContent]
     REMOTE_TYPES = [GemRemote]
 
     class Meta:
