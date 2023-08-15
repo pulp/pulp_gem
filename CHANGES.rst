@@ -13,6 +13,30 @@ Changelog
 
 .. towncrier release notes start
 
+0.2.0 (2023-08-15)
+==================
+
+Features
+--------
+
+- Added support for gems with a platform that is not "ruby".
+  `#130 <https://github.com/pulp/pulp_gem/issues/130>`__
+
+
+Bugfixes
+--------
+
+- Fixed the detection of prerelease versions.
+  `#114 <https://github.com/pulp/pulp_gem/issues/114>`__
+- Added a datarepair-gemspec-platform command to regenerate the gemspec artifacts and properly set the platform attribute on existing gems.
+  `#130 <https://github.com/pulp/pulp_gem/issues/130>`__
+- Fixed the generation of gemspec data.
+  `#131 <https://github.com/pulp/pulp_gem/issues/131>`__
+
+
+----
+
+
 0.1.1 (2023-06-29)
 ==================
 
