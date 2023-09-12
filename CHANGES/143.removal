@@ -1,0 +1,1 @@
+Removed pre 0.2 residua. When you are upgrading from <0.3, and your system was operated on <0.2 before, make sure you have run the corresponding datarepair commands before upgrading the codebase to this version.
