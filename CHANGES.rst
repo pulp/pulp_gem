@@ -13,6 +13,19 @@ Changelog
 
 .. towncrier release notes start
 
+0.3.0 (2023-09-18)
+==================
+
+Deprecations and Removals
+-------------------------
+
+- Added a migration to tell admins to run certain datarepair commands before upgrading to 0.4.
+  `#141 <https://github.com/pulp/pulp_gem/issues/141>`__
+
+
+----
+
+
 0.2.0 (2023-08-15)
 ==================
 
