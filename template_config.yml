@@ -1,7 +1,7 @@
 # This config represents the latest values used when running the plugin-template. Any settings that
 # were not present before running plugin-template have been added with their default values.
 
-# generated with plugin_template@2021.08.26-240-gd3a60ef
+# generated with plugin_template@2021.08.26-248-g4bfc3e1
 
 additional_repos: []
 api_root: /pulp/
@@ -15,6 +15,7 @@ ci_trigger: '{pull_request: {branches: [''*'']}}'
 ci_update_branches:
 - '0.1'
 ci_update_docs: true
+ci_update_release_behavior: null
 cli_package: pulp-cli
 cli_repo: https://github.com/pulp/pulp-cli.git
 core_import_allowed: []
@@ -47,6 +48,10 @@ plugin_snake: pulp_gem
 post_job_template: null
 pre_job_template: null
 publish_docs_to_pulpprojectdotorg: true
+pulp_env: {}
+pulp_env_azure: {}
+pulp_env_gcp: {}
+pulp_env_s3: {}
 pulp_scheme: https
 pulp_settings: null
 pulp_settings_azure: null
@@ -58,7 +63,6 @@ pulp_settings_s3:
   - sha256
   - sha384
   - sha512
-pulp_settings_stream: null
 pulpprojectdotorg_key_id: null
 pydocstyle: true
 pypi_username: None
