@@ -1,17 +1,16 @@
-import pytest
 import uuid
 
+import pytest
+from pulp_gem.tests.functional.constants import GEM_FIXTURE_URL
 from pulpcore.client.pulp_gem import (
     ApiClient,
     ContentGemApi,
     DistributionsGemApi,
     PublicationsGemApi,
+    RemotesGemApi,
     RepositoriesGemApi,
     RepositoriesGemVersionsApi,
-    RemotesGemApi,
 )
-
-from pulp_gem.tests.functional.constants import GEM_FIXTURE_URL
 
 # Api Bindings fixtures
 
@@ -62,9 +61,12 @@ def gem_repository_factory(gem_repository_api_client, gen_object_with_cleanup):
     """A factory to generate a Gem Repository with auto-deletion after the test run."""
 
     def _gem_repository_factory(**kwargs):
+        extra_args = {}
+        if pulp_domain := kwargs.pop("pulp_domain", None):
+            extra_args["pulp_domain"] = pulp_domain
         data = {"name": str(uuid.uuid4())}
         data.update(kwargs)
-        return gen_object_with_cleanup(gem_repository_api_client, data)
+        return gen_object_with_cleanup(gem_repository_api_client, data, **extra_args)
 
     return _gem_repository_factory
 
@@ -73,10 +75,13 @@ def gem_repository_factory(gem_repository_api_client, gen_object_with_cleanup):
 def gem_distribution_factory(gem_distribution_api_client, gen_object_with_cleanup):
     """A factory to generate a Gem Distribution with auto-deletion after the test run."""
 
-    def _gem_distribution_factory(**body):
+    def _gem_distribution_factory(**kwargs):
+        extra_args = {}
+        if pulp_domain := kwargs.pop("pulp_domain", None):
+            extra_args["pulp_domain"] = pulp_domain
         data = {"base_path": str(uuid.uuid4()), "name": str(uuid.uuid4())}
-        data.update(body)
-        return gen_object_with_cleanup(gem_distribution_api_client, data)
+        data.update(kwargs)
+        return gen_object_with_cleanup(gem_distribution_api_client, data, **extra_args)
 
     return _gem_distribution_factory
 
@@ -86,9 +91,12 @@ def gem_publication_factory(gem_publication_api_client, gen_object_with_cleanup)
     """A factory to generate a Gem Publication with auto-deletion after the test run."""
 
     def _gem_publication_factory(**kwargs):
+        extra_args = {}
+        if pulp_domain := kwargs.pop("pulp_domain", None):
+            extra_args["pulp_domain"] = pulp_domain
         # XOR check on repository and repository_version
         assert bool("repository" in kwargs) ^ bool("repository_version" in kwargs)
-        return gen_object_with_cleanup(gem_publication_api_client, kwargs)
+        return gen_object_with_cleanup(gem_publication_api_client, kwargs, **extra_args)
 
     return _gem_publication_factory
 
@@ -98,9 +106,12 @@ def gem_remote_factory(gem_remote_api_client, gen_object_with_cleanup):
     """A factory to generate a Gem Remote with auto-deletion after the test run."""
 
     def _gem_remote_factory(*, url=GEM_FIXTURE_URL, policy="immediate", **kwargs):
+        extra_args = {}
+        if pulp_domain := kwargs.pop("pulp_domain", None):
+            extra_args["pulp_domain"] = pulp_domain
         data = {"url": url, "policy": policy, "name": str(uuid.uuid4())}
         data.update(kwargs)
-        return gen_object_with_cleanup(gem_remote_api_client, data)
+        return gen_object_with_cleanup(gem_remote_api_client, data, **extra_args)
 
     return _gem_remote_factory
 

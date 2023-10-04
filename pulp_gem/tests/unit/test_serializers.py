@@ -36,6 +36,10 @@ class TestGemContentSerializer(TestCase):
             file=SimpleUploadedFile("test_filename_b", b"test content_b"),
             **_checksums("b"),
         )
+        if settings.DOMAIN_ENABLED:
+            self.V3_API_ROOT = settings.API_ROOT + "default/api/v3/"
+        else:
+            self.V3_API_ROOT = settings.V3_API_ROOT
 
     @patch("pulp_gem.app.serializers._artifact_from_data")
     @patch("pulp_gem.app.serializers.analyse_gem")
@@ -44,24 +48,14 @@ class TestGemContentSerializer(TestCase):
         # Preparation
         ANALYZE_GEM.return_value = ({"name": "testname", "version": "1.2.3-test"}, "---\n...")
         _ARTIFACT_FROM_DATA.return_value = self.artifact2
-        data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
+        data = {"artifact": "{}artifacts/{}/".format(self.V3_API_ROOT, self.artifact.pk)}
         serializer = GemContentSerializer(data=data)
-        assert serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         # Verification
         ANALYZE_GEM.called_once_with(self.artifact)
         _ARTIFACT_FROM_DATA.called_once_with("---\n...")
 
-    @patch("pulp_gem.app.serializers._artifact_from_data")
-    @patch("pulp_gem.app.serializers.analyse_gem")
-    def test_duplicate_data(self, ANALYZE_GEM, _ARTIFACT_FROM_DATA):
-        """Test that the GemContentSerializer does accept duplicate data."""
-        # Preparation
-        ANALYZE_GEM.return_value = ({"name": "testname", "version": "1.2.3-test"}, "---\n...")
-        _ARTIFACT_FROM_DATA.return_value = self.artifact2
-        data = {"artifact": "{}artifacts/{}/".format(settings.V3_API_ROOT, self.artifact.pk)}
-        serializer = GemContentSerializer(data=data)
-        assert serializer.is_valid()
+        # Test that the GemContentSerializer does accept duplicate data.
         serializer.save()
-        # Test
         serializer = GemContentSerializer(data=data)
-        assert serializer.is_valid()
+        serializer.is_valid(raise_exception=True)

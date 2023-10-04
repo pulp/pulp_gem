@@ -23,6 +23,7 @@ from pulpcore.plugin.serializers import (
     RepositorySerializer,
     SingleContentArtifactField,
 )
+from pulpcore.plugin.util import get_domain_pk
 
 from pulp_gem.app.models import (
     GemContent,
@@ -126,7 +127,9 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         return data
 
     def retrieve(self, validated_data):
-        return GemContent.objects.filter(checksum=validated_data["checksum"]).first()
+        return GemContent.objects.filter(
+            _pulp_domain=get_domain_pk(), checksum=validated_data["checksum"]
+        ).first()
 
     class Meta:
         fields = MultipleArtifactContentSerializer.Meta.fields + (
