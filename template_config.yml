@@ -64,6 +64,7 @@ pulp_settings_s3:
   - sha256
   - sha384
   - sha512
+  domain_enabled: true
 pulpprojectdotorg_key_id: null
 pydocstyle: true
 pypi_username: None

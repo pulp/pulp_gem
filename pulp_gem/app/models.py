@@ -6,12 +6,14 @@ from django.contrib.postgres.fields import HStoreField
 from django.db import models
 
 from pulpcore.plugin.models import (
+    AutoAddObjPermsMixin,
     Content,
     Publication,
     Distribution,
     Remote,
     Repository,
 )
+from pulpcore.plugin.util import get_domain_pk
 
 from pulp_gem.specs import analyse_gem
 
@@ -30,6 +32,7 @@ class GemContent(Content):
     TYPE = "gem"
     repo_key_fields = ("name", "version", "platform")
 
+    _pulp_domain = models.ForeignKey("core.Domain", default=get_domain_pk, on_delete=models.PROTECT)
     name = models.TextField(blank=False, null=False)
     version = models.TextField(blank=False, null=False)
     platform = models.TextField(blank=False, null=False)
@@ -81,21 +84,28 @@ class GemContent(Content):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
-        unique_together = ("checksum",)
+        unique_together = (
+            "_pulp_domain",
+            "checksum",
+        )
 
 
-class GemDistribution(Distribution):
+class GemDistribution(Distribution, AutoAddObjPermsMixin):
     """
     A Distribution for GemContent.
     """
 
     TYPE = "gem"
+    SERVE_FROM_PUBLICATION = True
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_gemdistribution", "Can manage roles on gem distributions"),
+        ]
 
 
-class GemPublication(Publication):
+class GemPublication(Publication, AutoAddObjPermsMixin):
     """
     A Publication for GemContent.
     """
@@ -104,9 +114,12 @@ class GemPublication(Publication):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_gempublication", "Can manage roles on gem publications"),
+        ]
 
 
-class GemRemote(Remote):
+class GemRemote(Remote, AutoAddObjPermsMixin):
     """
     A Remote for GemContent.
     """
@@ -133,9 +146,12 @@ class GemRemote(Remote):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("manage_roles_gemremote", "Can manage roles on gem remotes"),
+        ]
 
 
-class GemRepository(Repository):
+class GemRepository(Repository, AutoAddObjPermsMixin):
     """
     A Repository for GemContent.
     """
@@ -146,3 +162,9 @@ class GemRepository(Repository):
 
     class Meta:
         default_related_name = "%(app_label)s_%(model_name)s"
+        permissions = [
+            ("sync_gemrepository", "Can start a sync task"),
+            ("modify_gemrepository", "Can modify content of the repository"),
+            ("manage_roles_gemrepository", "Can manage roles on gem repositories"),
+            ("repair_gemrepository", "Can repair repository versions"),
+        ]
