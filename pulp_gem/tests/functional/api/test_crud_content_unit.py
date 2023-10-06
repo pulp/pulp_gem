@@ -1,14 +1,38 @@
 """Tests that perform actions over content unit."""
-import pytest
 import uuid
 
+import pytest
 from pulp_gem.tests.functional.constants import GEM_URL
+
+
+def test_upload_content_unit(
+    gem_content_api_client,
+    http_get,
+    monitor_task,
+    tmp_path,
+    delete_orphans_pre,
+):
+    temp_file = tmp_path / str(uuid.uuid4())
+    content = http_get(GEM_URL)
+    temp_file.write_bytes(content)
+    response = gem_content_api_client.create(file=temp_file)
+    task = monitor_task(response.task)
+    assert len(task.created_resources) == 1
+
+    content = gem_content_api_client.read(task.created_resources[0])
+    assert content.name == "amber"
+    assert content.version == "1.0.0"
+
+    # Upload again
+    response = gem_content_api_client.create(file=temp_file)
+    task = monitor_task(response.task)
+    assert len(task.created_resources) == 1
+    assert task.created_resources[0] == content.pulp_href
 
 
 def test_crud_content_unit(
     gem_content_api_client,
     artifacts_api_client,
-    gen_object_with_cleanup,
     http_get,
     monitor_task,
     tmp_path,
@@ -19,7 +43,7 @@ def test_crud_content_unit(
     temp_file = tmp_path / str(uuid.uuid4())
     content = http_get(GEM_URL)
     temp_file.write_bytes(content)
-    artifact = gen_object_with_cleanup(artifacts_api_client, temp_file)
+    artifact = artifacts_api_client.create(temp_file)
     response = gem_content_api_client.create(artifact=artifact.pulp_href)
     task = monitor_task(response.task)
     assert len(task.created_resources) == 1
