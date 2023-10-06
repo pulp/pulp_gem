@@ -4,7 +4,6 @@ import tempfile
 import hashlib
 import os
 
-from django.db import IntegrityError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
@@ -128,33 +127,6 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
 
     def retrieve(self, validated_data):
         return GemContent.objects.filter(checksum=validated_data["checksum"]).first()
-
-    def create(self, validated_data):
-        """Save the GemContent unit.
-
-        This must be used inside a task that locks on the Artifact and if given, the repository.
-        """
-        repository = validated_data.pop("repository", None)
-        content = self.retrieve(validated_data)
-        if content is None:
-            try:
-                content = super().create(validated_data)
-            except IntegrityError:
-                content = self.retrieve(validated_data)
-                if content is None:
-                    raise
-                content.touch()
-        else:
-            content.touch()
-
-        if repository:
-            repository.cast()
-            content_to_add = self.Meta.model.objects.filter(pk=content.pk)
-
-            # create new repo version with uploaded package
-            with repository.new_version() as new_version:
-                new_version.add_content(content_to_add)
-        return content
 
     class Meta:
         fields = MultipleArtifactContentSerializer.Meta.fields + (
