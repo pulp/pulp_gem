@@ -20,7 +20,6 @@ Features
 --------
 
 - Bumped pulpcore compatibility to 3.54.
-  `#40 <https://github.com/pulp/pulp_gem/issues/40>`__
 - Added support for RBAC and domains.
   `#154 <https://github.com/pulp/pulp_gem/issues/154>`__
 
