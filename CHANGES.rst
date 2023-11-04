@@ -13,6 +13,27 @@ Changelog
 
 .. towncrier release notes start
 
+0.4.0 (2023-11-03)
+==================
+
+Features
+--------
+
+- Bumped pulpcore compatibility to 3.54.
+- Added support for RBAC and domains.
+  `#154 <https://github.com/pulp/pulp_gem/issues/154>`__
+
+
+Deprecations and Removals
+-------------------------
+
+- Removed pre 0.2 residua. When you are upgrading from <0.3, and your system was operated on <0.2 before, make sure you have run the corresponding datarepair commands before upgrading the codebase to this version.
+  `#143 <https://github.com/pulp/pulp_gem/issues/143>`__
+
+
+----
+
+
 0.3.0 (2023-09-18)
 ==================
 
