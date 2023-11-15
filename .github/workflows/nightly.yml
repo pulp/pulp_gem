@@ -24,6 +24,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    needs: build
 
     strategy:
       fail-fast: false
@@ -33,7 +34,7 @@ jobs:
           - TEST: docs
           - TEST: azure
           - TEST: s3
-
+          
           - TEST: generate-bindings
           - TEST: lowerbounds
 
@@ -42,14 +43,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
-
       - uses: actions/download-artifact@v3
         with:
           name: plugin_package
           path: dist/
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
 
       - name: Install httpie
         run: |
@@ -219,6 +220,11 @@ jobs:
         with:
           fetch-depth: 1
 
+      - uses: actions/download-artifact@v3
+        with:
+          name: plugin_package
+          path: dist/
+
       - uses: actions/setup-python@v4
         with:
           python-version: "3.8"
@@ -297,7 +303,7 @@ jobs:
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
 
-
+      
       - name: Download built docs
         uses: actions/download-artifact@v3
         with:
@@ -312,7 +318,7 @@ jobs:
         run: |
           tar -xvf docs.tar -C ./docs
           .github/workflows/scripts/publish_docs.sh nightly ${GITHUB_REF##*/}
-
+      
 
       - name: Logs
         if: always()
