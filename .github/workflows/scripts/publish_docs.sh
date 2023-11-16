@@ -39,19 +39,6 @@ fi
 mkdir -p ../gem-bindings
 tar -xvf gem-python-client-docs.tar --directory ../gem-bindings
 pushd ../gem-bindings
-cat >> mkdocs.yml << DOCSYAML
----
-site_name: PulpGem Client
-site_description: Gem bindings
-site_author: Pulp Team
-site_url: https://docs.pulpproject.org/pulp_gem_client/
-repo_name: pulp/pulp_gem
-repo_url: https://github.com/pulp/pulp_gem
-theme: readthedocs
-DOCSYAML
-
-# Building the bindings docs
-mkdocs build
 
 # publish to docs.pulpproject.org/pulp_gem_client
 rsync -avzh site/ doc_builder_pulp_gem@docs.pulpproject.org:/var/www/docs.pulpproject.org/pulp_gem_client/
