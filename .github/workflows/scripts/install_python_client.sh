@@ -9,45 +9,36 @@
 
 set -mveuo pipefail
 
-export PULP_URL="${PULP_URL:-https://pulp}"
-
 # make sure this script runs at the repo root
 cd "$(dirname "$(realpath -e "$0")")"/../../..
 
+source .github/workflows/scripts/utils.sh
+
+export PULP_URL="${PULP_URL:-https://pulp}"
+
 pip install twine wheel
 
-export REPORTED_VERSION=$(http $PULP_URL/pulp/api/v3/status/ | jq --arg plugin gem --arg legacy_plugin pulp_gem -r '.versions[] | select(.component == $plugin or .component == $legacy_plugin) | .version')
-export DESCRIPTION="$(git describe --all --exact-match `git rev-parse HEAD`)"
-if [[ $DESCRIPTION == 'tags/'$REPORTED_VERSION ]]; then
-  export VERSION=${REPORTED_VERSION}
-else
-  export EPOCH="$(date +%s)"
-  export VERSION=${REPORTED_VERSION}${EPOCH}
-fi
+REPORTED_STATUS="$(pulp status)"
+REPORTED_VERSION="$(echo "$REPORTED_STATUS" | jq --arg plugin "gem" -r '.versions[] | select(.component == $plugin) | .version')"
+VERSION="$(echo "$REPORTED_VERSION" | python -c 'from packaging.version import Version; print(Version(input()))')"
 
-export response=$(curl --write-out %{http_code} --silent --output /dev/null https://pypi.org/project/pulp-gem-client/$VERSION/)
-
-if [ "$response" == "200" ];
-then
-  echo "pulp_gem client $VERSION has already been released. Installing from PyPI."
-  docker exec pulp pip3 install pulp-gem-client==$VERSION
-  mkdir -p dist
-  tar cvf python-client.tar ./dist
-  exit
-fi
-
-cd ../pulp-openapi-generator
+pushd ../pulp-openapi-generator
 rm -rf pulp_gem-client
-./generate.sh pulp_gem python $VERSION
-cd pulp_gem-client
+./generate.sh pulp_gem python "$VERSION"
+pushd pulp_gem-client
 python setup.py sdist bdist_wheel --python-tag py3
-find . -name "*.whl" -exec docker exec pulp pip3 install /root/pulp-openapi-generator/pulp_gem-client/{} \;
-tar cvf ../../pulp_gem/python-client.tar ./dist
+
+twine check "dist/pulp_gem_client-$VERSION-py3-none-any.whl" || exit 1
+twine check "dist/pulp_gem-client-$VERSION.tar.gz" || exit 1
+
+cmd_prefix pip3 install "/root/pulp-openapi-generator/pulp_gem-client/dist/pulp_gem_client-${VERSION}-py3-none-any.whl"
+tar cvf ../../pulp_gem/gem-python-client.tar ./dist
 
 find ./docs/* -exec sed -i 's/Back to README/Back to HOME/g' {} \;
 find ./docs/* -exec sed -i 's/README//g' {} \;
 cp README.md docs/index.md
 sed -i 's/docs\///g' docs/index.md
 find ./docs/* -exec sed -i 's/\.md//g' {} \;
-tar cvf ../../pulp_gem/python-client-docs.tar ./docs
-exit $?
+tar cvf ../../pulp_gem/gem-python-client-docs.tar ./docs
+popd
+popd
