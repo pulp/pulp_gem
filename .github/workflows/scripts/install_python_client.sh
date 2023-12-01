@@ -16,8 +16,6 @@ source .github/workflows/scripts/utils.sh
 
 export PULP_URL="${PULP_URL:-https://pulp}"
 
-pip install twine wheel
-
 REPORTED_STATUS="$(pulp status)"
 REPORTED_VERSION="$(echo "$REPORTED_STATUS" | jq --arg plugin "gem" -r '.versions[] | select(.component == $plugin) | .version')"
 VERSION="$(echo "$REPORTED_VERSION" | python -c 'from packaging.version import Version; print(Version(input()))')"
@@ -28,8 +26,8 @@ rm -rf pulp_gem-client
 pushd pulp_gem-client
 python setup.py sdist bdist_wheel --python-tag py3
 
-twine check "dist/pulp_gem_client-$VERSION-py3-none-any.whl" || exit 1
-twine check "dist/pulp_gem-client-$VERSION.tar.gz" || exit 1
+twine check "dist/pulp_gem_client-$VERSION-py3-none-any.whl"
+twine check "dist/pulp_gem-client-$VERSION.tar.gz"
 
 cmd_prefix pip3 install "/root/pulp-openapi-generator/pulp_gem-client/dist/pulp_gem_client-${VERSION}-py3-none-any.whl"
 tar cvf ../../pulp_gem/gem-python-client.tar ./dist
@@ -39,6 +37,21 @@ find ./docs/* -exec sed -i 's/README//g' {} \;
 cp README.md docs/index.md
 sed -i 's/docs\///g' docs/index.md
 find ./docs/* -exec sed -i 's/\.md//g' {} \;
+
+cat >> mkdocs.yml << DOCSYAML
+---
+site_name: PulpGem Client
+site_description: Gem bindings
+site_author: Pulp Team
+site_url: https://docs.pulpproject.org/pulp_gem_client/
+repo_name: pulp/pulp_gem
+repo_url: https://github.com/pulp/pulp_gem
+theme: readthedocs
+DOCSYAML
+
+# Building the bindings docs
+mkdocs build
+
 tar cvf ../../pulp_gem/gem-python-client-docs.tar ./docs
 popd
 popd
