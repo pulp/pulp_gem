@@ -6,7 +6,7 @@
 # For more info visit https://github.com/pulp/plugin_template
 
 ---
-name: Gem CI
+name: "Gem CI"
 on: {pull_request: {branches: ['*']}}
 
 concurrency:
@@ -18,49 +18,46 @@ defaults:
     working-directory: "pulp_gem"
 
 jobs:
-
   ready-to-ship:
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v4
+      - uses: "actions/checkout@v4"
         with:
           fetch-depth: 0
           path: "pulp_gem"
-      - uses: actions/setup-python@v4
+      - uses: "actions/setup-python@v4"
         with:
           python-version: "3.8"
-      - name: Verify requirements files
-        run: python .ci/scripts/check_requirements.py
+      - name: "Verify requirements files"
+        run: |
+          python .ci/scripts/check_requirements.py
 
   lint:
     uses: "./.github/workflows/lint.yml"
 
   build:
-    needs: lint
+    needs: "lint"
     uses: "./.github/workflows/build.yml"
 
   test:
-    needs: build
+    needs: "build"
     uses: "./.github/workflows/test.yml"
 
   deprecations:
-    defaults:
-      run:
-        working-directory: "."
-    runs-on: ubuntu-latest
+    runs-on: "ubuntu-latest"
     if: github.base_ref == 'main'
-    needs: test
+    needs: "test"
     steps:
-      - name: Fail on deprecations
+      - name: "Create working directory"
         run: |
-          test -z "${{ needs.test.outputs.deprecations-pulp }}"
-          test -z "${{ needs.test.outputs.deprecations-azure }}"
-          test -z "${{ needs.test.outputs.deprecations-s3 }}"
-          test -z "${{ needs.test.outputs.deprecations-lowerbounds }}"
-      - name: Print deprecations
-        if: failure()
+          mkdir -p "pulp_gem"
+        working-directory: "."
+      - name: "Download Deprecations"
+        uses: actions/download-artifact@v3
+        with:
+          name: "deprecations"
+          path: "pulp_gem"
+      - name: "Print deprecations"
         run: |
-          echo "${{ needs.test.outputs.deprecations-pulp }}" | base64 -d
-          echo "${{ needs.test.outputs.deprecations-azure }}" | base64 -d
-          echo "${{ needs.test.outputs.deprecations-s3 }}" | base64 -d
-          echo "${{ needs.test.outputs.deprecations-lowerbounds }}" | base64 -d
+          cat deprecations-*.txt | sort -u
+          ! cat deprecations-*.txt | grep '[^[:space:]]'
