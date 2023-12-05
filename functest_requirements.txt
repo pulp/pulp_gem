@@ -1,6 +1,9 @@
 django
 dynaconf
-pulp-smash @ git+https://github.com/pulp/pulp-smash.git
+proxy.py
 pulpcore-client
 pulp-gem-client
 pytest
+pytest-custom_exit_code
+pytest-xdist
+trustme
