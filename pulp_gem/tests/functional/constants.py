@@ -2,29 +2,11 @@
 """Constants for Pulp Gem plugin tests."""
 from urllib.parse import urljoin
 
-from pulp_smash.constants import PULP_FIXTURES_BASE_URL
-from pulp_smash.pulp3.constants import (
-    BASE_CONTENT_PATH,
-    BASE_DISTRIBUTION_PATH,
-    BASE_PUBLICATION_PATH,
-    BASE_REMOTE_PATH,
-    BASE_REPO_PATH,
-)
-
+PULP_FIXTURES_BASE_URL = "https://fixtures.pulpproject.org/"
 
 DOWNLOAD_POLICIES = ["immediate", "streamed", "on_demand"]
 
 GEM_CONTENT_NAME = "gem.gem"
-
-GEM_CONTENT_PATH = urljoin(BASE_CONTENT_PATH, "gem/gem/")
-
-GEM_DISTRIBUTION_PATH = urljoin(BASE_DISTRIBUTION_PATH, "gem/gem/")
-
-GEM_REMOTE_PATH = urljoin(BASE_REMOTE_PATH, "gem/gem/")
-
-GEM_REPO_PATH = urljoin(BASE_REPO_PATH, "gem/gem/")
-
-GEM_PUBLICATION_PATH = urljoin(BASE_PUBLICATION_PATH, "gem/gem/")
 
 GEM_FIXTURE_URL = urljoin(PULP_FIXTURES_BASE_URL, "gem/")
 """The URL to a gem repository."""
