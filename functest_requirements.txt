@@ -3,7 +3,7 @@ dynaconf
 proxy.py
 pulpcore-client
 pulp-gem-client
-pytest
+pytest<8
 pytest-custom_exit_code
 pytest-xdist
 trustme
