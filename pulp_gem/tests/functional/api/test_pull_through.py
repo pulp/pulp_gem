@@ -60,18 +60,27 @@ def test_pull_through_install(
     remote2 = gem_remote_factory()
     distribution2 = gem_distribution_factory(remote=remote2.pulp_href)
 
-    for dis, gem in ((distribution, "a"), (distribution2, "beryl")):
-        cmd = ["gem", "i", "--remote", "--clear-sources", "-s", dis.base_url, gem, "-v", "0.1.0"]
+    for dis, gem, version in (
+        (distribution, "a", "0.1.0"),
+        (distribution2, "beryl", "0.1.0"),
+        (distribution, "ruby-hmac", "0.4.0"),
+    ):
+        cmd = ["gem", "i", "--remote", "--clear-sources", "-s", dis.base_url, gem, "-v", version]
 
         out = subprocess.run(cmd, stdout=subprocess.PIPE)
-        assert f"Successfully installed {gem}-0.1.0" in out.stdout.decode("utf-8")
+        assert f"Successfully installed {gem}-{version}" in out.stdout.decode("utf-8")
 
-        r = gem_content_api_client.list(name=gem, version="0.1.0")
+        r = gem_content_api_client.list(name=gem, version=version)
         assert r.count == 1
         assert r.results[0].name == gem
-        assert r.results[0].version == "0.1.0"
+        assert r.results[0].version == version
 
-        subprocess.run(("gem", "uninstall", gem, "-v", "0.1.0"))
+        subprocess.run(("gem", "uninstall", gem, "-v", version))
 
     content_after = gem_content_api_client.list().count
-    assert content_before + 2 == content_after
+    assert content_before + 3 == content_after
+
+    hmac_content = gem_content_api_client.list(name="ruby-hmac", version="0.4.0").results[0]
+    assert hmac_content.dependencies["hoe"] == ">= 2.5.0"
+    assert hmac_content.dependencies["gemcutter"] == ">= 0.2.1"
+    assert hmac_content.dependencies["rubyforge"] == ">= 2.0.3"
