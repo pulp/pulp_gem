@@ -1,4 +1,5 @@
 from collections import namedtuple
+from logging import getLogger
 
 import aiofiles
 import datetime
@@ -13,6 +14,8 @@ import rubymarshal.classes
 import rubymarshal.writer
 import rubymarshal.reader
 
+
+log = getLogger(__name__)
 
 NAME_REGEX = re.compile(r"[\w\.-]+")
 VERSION_REGEX = re.compile(r"\d+(?:\.\d+)*")
@@ -274,6 +277,41 @@ class GemDependency(rubymarshal.classes.RubyObject):
         result.attributes = {f"@{key}": value for key, value in values.items()}
         result.attributes["@type"] = rubymarshal.classes.Symbol(result.attributes["@type"][1:])
 
+    @property
+    def requirement(self):
+        # From:
+        # File lib/rubygems/dependency.rb, line 116
+
+        # @version_requirements and @version_requirement are legacy ivar
+        # names, and supported here because older gems need to keep
+        # working and Dependency doesn't implement marshal_dump and
+        # marshal_load. In a happier world, this would be an
+        # attr_accessor. The horrifying instance_variable_get you see
+        # below is also the legacy of some old restructurings.
+        #
+        # Note also that because of backwards compatibility (loading new
+        # gems in an old RubyGems installation), we can't add explicit
+        # marshaling to this class until we want to make a big
+        # break. Maybe 2.0.
+        #
+        # Children, define explicit marshal and unmarshal behavior for
+        # public classes. Marshal formats are part of your public API.
+
+        if result := self.attributes.get("@requirement"):
+            return result
+        if version_requirement := self.attributes.pop("@version_requirement", None):
+            log.warn(
+                "You are attempting to process a really old gem. "
+                "If this codepath fails, please report an issue with this gem "
+                "so we actually have something to experiment on."
+            )
+            version = GemVersion()
+            version.marshal_load([version_requirement.attributes["@version"]])
+            requirement = GemRequirement()
+            requirement._private_data[0] = [[">=", version]]
+            self.attributes["@version_requirements"] = requirement
+        return self.attributes.get("@version_requirements")
+
 
 class RubyTime(rubymarshal.classes.UserDef):
     ruby_class_name = "Time"
@@ -352,7 +390,7 @@ def analyse_gem(file_obj):
             gem_info[key] = requirement.to_s()
     if (dependencies := data._private_data.get("dependencies")) is not None:
         gem_info["dependencies"] = {
-            dep.attributes["@name"]: dep.attributes["@requirement"].to_s() for dep in dependencies
+            dep.attributes["@name"]: dep.requirement.to_s() for dep in dependencies
         }
     zdata = zlib.compress(rubymarshal.writer.writes(data))
     return gem_info, zdata
