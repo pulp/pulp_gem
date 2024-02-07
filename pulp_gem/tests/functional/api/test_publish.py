@@ -5,12 +5,12 @@ from random import choice
 
 @pytest.mark.parallel
 def test_publish(
-    gem_repo,
     gem_repository_api_client,
     gem_repository_version_api_client,
-    gem_remote_factory,
     gem_content_api_client,
     gem_publication_factory,
+    gem_remote_factory,
+    gem_repository_factory,
     monitor_task,
 ):
     """Test whether a particular repository version can be published.
@@ -23,29 +23,30 @@ def test_publish(
     5. Assert that the publication ``repository_version`` attribute points
        to the supplied repository version.
     """
+    repository = gem_repository_factory()
     remote = gem_remote_factory()
-    result = gem_repository_api_client.sync(gem_repo.pulp_href, {"remote": remote.pulp_href})
+    result = gem_repository_api_client.sync(repository.pulp_href, {"remote": remote.pulp_href})
     monitor_task(result.task)
-    repo = gem_repository_api_client.read(gem_repo.pulp_href)
+    repository = gem_repository_api_client.read(repository.pulp_href)
 
     # Step 1
-    content = gem_content_api_client.list(repository_version=repo.latest_version_href)
+    content = gem_content_api_client.list(repository_version=repository.latest_version_href)
     for i, gem_content in enumerate(content.results):
-        repo_ver_href = f"{repo.versions_href}{i}/"
+        repo_ver_href = f"{repository.versions_href}{i}/"
         body = {"add_content_units": [gem_content.pulp_href], "base_version": repo_ver_href}
-        result = gem_repository_api_client.modify(repo.pulp_href, body)
+        result = gem_repository_api_client.modify(repository.pulp_href, body)
         monitor_task(result.task)
 
-    repo = gem_repository_api_client.read(repo.pulp_href)
-    assert repo.latest_version_href.endswith(f"/{content.count + 1}/")
+    repository = gem_repository_api_client.read(repository.pulp_href)
+    assert repository.latest_version_href.endswith(f"/{content.count + 1}/")
 
-    versions = gem_repository_version_api_client.list(repo.pulp_href)
+    versions = gem_repository_version_api_client.list(repository.pulp_href)
     # This is in descending order, so latest first
     version_hrefs = [ver.pulp_href for ver in versions.results]
     non_latest = choice(version_hrefs[:-1])
 
     # Step 2
-    publication = gem_publication_factory(repository=repo.pulp_href)
+    publication = gem_publication_factory(repository=repository.pulp_href)
 
     # Step 3
     assert publication.repository_version == version_hrefs[0]
