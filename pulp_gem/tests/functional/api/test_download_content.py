@@ -10,9 +10,9 @@ from pulp_gem.tests.functional.constants import DOWNLOAD_POLICIES, GEM_FIXTURE_U
 @pytest.mark.parametrize("policy", DOWNLOAD_POLICIES)
 def test_download_content(
     policy,
-    gem_repo,
     gem_repository_api_client,
     gem_content_api_client,
+    gem_repository_factory,
     gem_remote_factory,
     gem_publication_factory,
     gem_distribution_factory,
@@ -30,16 +30,17 @@ def test_download_content(
        content unit from Pulp, and verify that the content unit has the
        same checksum when fetched directly from Pulp-Fixtures.
     """
+    repository = gem_repository_factory()
     remote = gem_remote_factory(policy=policy)
 
     # Sync repository
     body = {"remote": remote.pulp_href}
-    result = gem_repository_api_client.sync(gem_repo.pulp_href, body)
+    result = gem_repository_api_client.sync(repository.pulp_href, body)
     monitor_task(result.task)
-    repo = gem_repository_api_client.read(gem_repo.pulp_href)
+    repo = gem_repository_api_client.read(repository.pulp_href)
 
     # Create a publication.
-    publication = gem_publication_factory(repository=gem_repo.pulp_href)
+    publication = gem_publication_factory(repository=repository.pulp_href)
 
     # Create a distribution.
     distribution = gem_distribution_factory(publication=publication.pulp_href)

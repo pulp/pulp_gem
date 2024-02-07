@@ -11,6 +11,7 @@ from pulpcore.client.pulp_gem import (
     RepositoriesGemApi,
     RepositoriesGemVersionsApi,
 )
+from pulp_gem.tests.functional.constants import GEM_URL
 
 # Api Bindings fixtures
 
@@ -116,6 +117,11 @@ def gem_remote_factory(gem_remote_api_client, gen_object_with_cleanup):
     return _gem_remote_factory
 
 
-@pytest.fixture
-def gem_repo(gem_repository_factory):
-    return gem_repository_factory()
+@pytest.fixture(scope="session")
+def gem_content_artifact(tmp_path_factory, http_get):
+    """A file containing amber-1.0.0.gem."""
+
+    temp_file = tmp_path_factory.mktemp("pulp_gem") / "amber-1.0.0.gem"
+    content = http_get(GEM_URL)
+    temp_file.write_bytes(content)
+    return temp_file
