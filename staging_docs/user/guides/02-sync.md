@@ -1,11 +1,10 @@
 # Synchronize a Repository
 
-Users can populate their repositories with content from an external sources by syncing
-their repository.
+Users can populate their repositories with content from an external sources by syncing their repository.
 
 ## 1. Create a Repository
 
-Start by creating a new repository named "foo"
+Start by creating a new repository named "foo":
 
 === "run"
     ```bash
@@ -28,7 +27,7 @@ Start by creating a new repository named "foo"
 
 ## 2. Create a Remote
 
-Create a remote that syncs all versions of panda into your repository.
+Create a remote that syncs all versions of the `panda` gem into your repository.
 
 === "run"
     ```bash
@@ -74,7 +73,7 @@ Create a remote that syncs all versions of panda into your repository.
 ## 3. Sync repository foo with remote
 
 Use the remote object to kick off a synchronize task by specifying the repository to sync with.
-You are telling pulp to fetch content from the remote and add to the repository
+You are telling pulp to fetch content from the remote and add to the repository:
 
 === "run"
     ```bash

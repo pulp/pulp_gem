@@ -25,7 +25,8 @@ Start by creating a new repository named "foo".
 
 ## 2. Upload a file to Pulp
 
-Each artifact in Pulp represents a file. They can be created during sync or created manually by uploading a file
+Each artifact in Pulp represents a file.
+They can be created during sync or created manually by uploading a file:
 
 === "run"
     ```bash

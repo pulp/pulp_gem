@@ -1,47 +1,34 @@
 # User Setup
 
-All workflow examples use the Pulp CLI. Install and setup from PyPI:
+### Server Installation
 
-```bash
-pip install pulp-cli[pygments] pulp-cli-gem
-pulp config create -e
-pulp status # Check that CLI can talk to Pulp
-```
+Follow the [Installation Quickstart](site:pulp-oci-images/docs/admin/tutorials/quickstart.md) instructions to get started with Pulp.
+Further details are discussed in the [pulpcore documentation](https://docs.pulpproject.org/pulpcore/installation/instructions.html).
 
-If you configured the `admin` user with a different password, adjust the configuration
-accordingly. If you prefer to specify the username and password with each request, please see
-`Pulp CLI` documentation on how to do that.
+### CLI Installation
 
-### Install
+All workflow examples use the [Pulp CLI](https://docs.pulpproject.org/pulp_cli/).
+Install and setup from PyPI:
 
-=== "Containerized Installation"
-
-    Follow the [Pulp in One Container](https://pulpproject.org/pulp-in-one-container/) instructions to get started with Pulp by
-    leveraging OCI images. Further details are discussed in the [pulpcore documentation](https://docs.pulpproject.org/pulpcore/installation/instructions.html).
-
-=== "From Source"
+=== "pip"
 
     ```bash
-    sudo -u pulp -i
-    source ~/pulp/bin/activate
-    cd pulp_gem
-    pip install -e .
-    django-admin runserver 24817
+    pip install pulp-cli[pygments] pulp-cli-gem
+
+    pulp config create -e
+    pulp status  # Check that CLI can talk to Pulp
     ```
 
-### Make and Run Migrations
+=== "pipx"
 
-```bash
-pulp-manager makemigrations pulp_gem
-pulp-manager migrate pulp_gem
-```
+    ```bash
+    pipx install pulp-cli[pygments]
+    pipx inject pulp-cli pulp-cli-gem
 
-### Run Services
+    pulp config create -e
+    pulp status  # Check that CLI can talk to Pulp
+    ```
 
-```bash
-pulp-manager runserver
-gunicorn pulpcore.content:server --bind 'localhost:24816' --worker-class 'aiohttp.GunicornWebWorker' -w 2
-sudo systemctl restart pulpcore-resource-manager
-sudo systemctl restart pulpcore-worker@1
-sudo systemctl restart pulpcore-worker@2
-```
+If you configured the `admin` user with a different password, adjust the configuration accordingly.
+If you prefer to specify the `username` and `password` with each request,
+please see [`Pulp CLI` documentation](https://docs.pulpproject.org/pulp_cli/configuration/) on how to do that.
