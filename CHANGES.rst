@@ -13,6 +13,19 @@ Changelog
 
 .. towncrier release notes start
 
+0.4.1 (2024-02-12)
+==================
+
+Bugfixes
+--------
+
+- Fixed a bug where legacy gems would cause an exception in pulpcore-content.
+  `#209 <https://github.com/pulp/pulp_gem/issues/209>`__
+
+
+----
+
+
 0.4.0 (2023-11-03)
 ==================
 
