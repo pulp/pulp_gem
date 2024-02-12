@@ -13,6 +13,33 @@ Changelog
 
 .. towncrier release notes start
 
+0.5.0 (2024-02-12)
+==================
+
+Features
+--------
+
+- Added replica definitions.
+  `#216 <https://github.com/pulp/pulp_gem/issues/216>`__
+
+
+Bugfixes
+--------
+
+- Fixed a bug where legacy gems would cause an exception in pulpcore-content.
+  `#209 <https://github.com/pulp/pulp_gem/issues/209>`__
+
+
+Deprecations and Removals
+-------------------------
+
+- Bumped the requirement on pulpcore to >=3.39 as the next supported version in the line.
+  
+
+
+----
+
+
 0.4.0 (2023-11-03)
 ==================
 
