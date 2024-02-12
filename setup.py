@@ -10,7 +10,7 @@ with open("README.md") as f:
 
 setup(
     name="pulp-gem",
-    version="0.5.0",
+    version="0.5.1.dev",
     description="Gemfile plugin for the Pulp Project",
     long_description=long_description,
     license="GPLv2+",
