@@ -5,9 +5,9 @@ See [Sync](site:pulp_gem/docs/user/guides/sync/) or [Upload](site:pulp_gem/docs/
 
 ## 1. Create a Publication
 
-Kick off a publish task by creating a new publication. The publish task will generate all the
-metadata that `gem` needs to install packages (although it will need to be hosted through a
-Distribution before it is consumable).
+Kick off a publish task by creating a new publication.
+The publish task will generate all the metadata that `gem` needs to install packages
+(although it will need to be hosted through a Distribution before it is consumable).
 
 === "run"
     ```bash
@@ -29,7 +29,8 @@ Distribution before it is consumable).
 
 ## 2. Host a Publication by creating a Distribution
 
-To host a publication, (which makes it consumable by `gem`), users create a distribution which will serve the associated publication at `/pulp/content/<distribution.base_path>`
+To host a publication, (which makes it consumable by `gem`),
+users create a distribution which will serve the associated publication at `/pulp/content/<distribution.base_path>`
 
 === "run"
     ```bash
@@ -55,13 +56,14 @@ To host a publication, (which makes it consumable by `gem`), users create a dist
     ```
 
 !!! note
-    Alternatively you could specify the repository when creating a distribution in which case Pulp will automatically distribute the latest available publication for the greatest repository version
+    Alternatively you could specify the repository when creating a distribution.
+    In this case Pulp will automatically distribute the newest available publication for the latest repository version.
 
 
 ## 3. Enable Pull-Through Caching:
 
-Only gems present in your repository will be available from your index, but adding a remote source to
-your distribution will enable the pull-through cache feature.
+Only gems present in your repository will be available from your index,
+but adding a remote source to your distribution will enable the pull-through cache feature.
 
 This feature allows you to install any gem from the remote source and have Pulp store that gem as orphaned content.
 
@@ -71,7 +73,8 @@ pulp gem distribution update --name foo --remote gem
 
 !!! warning
     Support for pull-through caching is provided as a tech preview in Pulp 3.
-    Functionality may not work or may be incomplete. Also, backwards compatibility when upgrading is not guaranteed.
+    The functionality may not work or may be incomplete.
+    Also, backwards compatibility when upgrading is not guaranteed.
 
 
 ## 4. Use the newly created distribution
