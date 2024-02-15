@@ -78,7 +78,8 @@ Use the Gem Distribution's `base_url` as the value for the `--source` parameter.
 
 === "run"
     ```bash
-    gem install --clear-sources --source http://localhost:5001/pulp/content/rubygems/ pulpcore_client
+    gem install --source http://localhost:5001/pulp/content/rubygems/ \
+      --clear-sources pulpcore_client
     ```
 === "output"
     ```bash
