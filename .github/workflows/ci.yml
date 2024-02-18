@@ -27,7 +27,7 @@ jobs:
           path: "pulp_gem"
       - uses: "actions/setup-python@v4"
         with:
-          python-version: "3.8"
+          python-version: "3.11"
       - name: "Verify requirements files"
         run: |
           python .ci/scripts/check_requirements.py
