@@ -7,6 +7,7 @@ def test_replication(
     domain_factory,
     bindings_cfg,
     upstream_pulp_api_client,
+    monitor_task,
     monitor_task_group,
     pulp_settings,
     add_to_cleanup,
@@ -31,9 +32,10 @@ def test_replication(
 
     # Add stuff to it
     repository = gem_repository_factory(pulp_domain=source_domain.name)
-    gem_content_api_client.create(
+    content_response = gem_content_api_client.create(
         file=gem_content_artifact, repository=repository.pulp_href, pulp_domain=source_domain.name
     )
+    monitor_task(content_response.task)
     publication = gem_publication_factory(
         pulp_domain=source_domain.name, repository=repository.pulp_href
     )
