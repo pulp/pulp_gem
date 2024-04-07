@@ -1,4 +1,5 @@
 """Tests that sync gem plugin repositories."""
+
 import pytest
 
 from pulp_gem.tests.functional.constants import (
