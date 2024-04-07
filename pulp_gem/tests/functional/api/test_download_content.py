@@ -1,4 +1,5 @@
 """Tests that verify download of content served by Pulp."""
+
 import pytest
 import hashlib
 from random import choice
