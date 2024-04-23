@@ -1,4 +1,5 @@
 """Tests that CRUD gem remotes."""
+
 import pytest
 import uuid
 from random import choice
