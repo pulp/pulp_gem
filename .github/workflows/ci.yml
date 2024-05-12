@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
           path: "pulp_gem"
-      - uses: "actions/setup-python@v4"
+      - uses: "actions/setup-python@v5"
         with:
           python-version: "3.11"
       - name: "Verify requirements files"
@@ -53,10 +53,11 @@ jobs:
           mkdir -p "pulp_gem"
         working-directory: "."
       - name: "Download Deprecations"
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: "deprecations"
+          pattern: "deprecations-*"
           path: "pulp_gem"
+          merge-multiple: true
       - name: "Print deprecations"
         run: |
           cat deprecations-*.txt | sort -u
