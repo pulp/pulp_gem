@@ -17,7 +17,7 @@ setup(
     author="Pulp Project Developers",
     author_email="pulp-dev@redhat.com",
     url="https://pulpproject.org/",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=requirements,
     include_package_data=True,
     packages=find_packages(exclude=["tests", "tests.*"]),
@@ -28,8 +28,6 @@ setup(
         "Framework :: Django",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
     ),
     entry_points={"pulpcore.plugin": ["pulp_gem = pulp_gem:default_app_config"]},
     project_urls={
