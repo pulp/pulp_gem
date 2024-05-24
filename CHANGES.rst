@@ -13,6 +13,19 @@ Changelog
 
 .. towncrier release notes start
 
+0.5.1 (2024-05-23)
+==================
+
+Bugfixes
+--------
+
+- Fixed the wrong upper bound for pulpcore version requirement.
+  `#265 <https://github.com/pulp/pulp_gem/issues/265>`__
+
+
+----
+
+
 0.5.0 (2024-02-12)
 ==================
 
