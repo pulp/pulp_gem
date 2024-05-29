@@ -4,17 +4,17 @@ from aiohttp.client_exceptions import ClientResponseError
 
 
 def test_pull_through_metadata(
+    pulpcore_bindings,
+    gem_bindings,
     gem_remote_factory,
     gem_distribution_factory,
-    gem_content_api_client,
-    artifacts_api_client,
     http_get,
 ):
     """
     Test that pull-through caching can retrieve metadata files upstream, but does not save them.
     """
-    artifacts_before = artifacts_api_client.list().count
-    content_before = gem_content_api_client.list().count
+    artifacts_before = pulpcore_bindings.ArtifactsApi.list().count
+    content_before = gem_bindings.ContentGemApi.list().count
 
     # Choose a remote source that supports all the different gem repository metadata formats
     remote = gem_remote_factory(url="https://rubygems.org")
@@ -31,8 +31,8 @@ def test_pull_through_metadata(
         url = distribution.base_url + path
         assert http_get(url)
 
-    artifacts_after = artifacts_api_client.list().count
-    content_after = gem_content_api_client.list().count
+    artifacts_after = pulpcore_bindings.ArtifactsApi.list().count
+    content_after = gem_bindings.ContentGemApi.list().count
 
     assert artifacts_before == artifacts_after
     assert content_before == content_after
@@ -44,7 +44,7 @@ def test_pull_through_metadata(
 
 
 def test_pull_through_install(
-    gem_remote_factory, gem_distribution_factory, gem_content_api_client, delete_orphans_pre
+    gem_bindings, gem_remote_factory, gem_distribution_factory, delete_orphans_pre
 ):
     """
     Test that gem clients can install from a distribution with pull-through caching.
@@ -52,7 +52,7 @@ def test_pull_through_install(
     out = subprocess.run(("which", "gem"))
     if out.returncode != 0:
         pytest.skip("gem not installed on test machine")
-    content_before = gem_content_api_client.list().count
+    content_before = gem_bindings.ContentGemApi.list().count
 
     remote = gem_remote_factory(url="https://rubygems.org")
     distribution = gem_distribution_factory(remote=remote.pulp_href)
@@ -70,17 +70,17 @@ def test_pull_through_install(
         out = subprocess.run(cmd, stdout=subprocess.PIPE)
         assert f"Successfully installed {gem}-{version}" in out.stdout.decode("utf-8")
 
-        r = gem_content_api_client.list(name=gem, version=version)
+        r = gem_bindings.ContentGemApi.list(name=gem, version=version)
         assert r.count == 1
         assert r.results[0].name == gem
         assert r.results[0].version == version
 
         subprocess.run(("gem", "uninstall", gem, "-v", version))
 
-    content_after = gem_content_api_client.list().count
+    content_after = gem_bindings.ContentGemApi.list().count
     assert content_before + 3 == content_after
 
-    hmac_content = gem_content_api_client.list(name="ruby-hmac", version="0.4.0").results[0]
+    hmac_content = gem_bindings.ContentGemApi.list(name="ruby-hmac", version="0.4.0").results[0]
     assert hmac_content.dependencies["hoe"] == ">= 2.5.0"
     assert hmac_content.dependencies["gemcutter"] == ">= 0.2.1"
     assert hmac_content.dependencies["rubyforge"] == ">= 2.0.3"

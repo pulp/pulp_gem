@@ -6,9 +6,7 @@ from random import choice
 
 @pytest.mark.parallel
 def test_publish(
-    gem_repository_api_client,
-    gem_repository_version_api_client,
-    gem_content_api_client,
+    gem_bindings,
     gem_publication_factory,
     gem_remote_factory,
     gem_repository_factory,
@@ -26,22 +24,24 @@ def test_publish(
     """
     repository = gem_repository_factory()
     remote = gem_remote_factory()
-    result = gem_repository_api_client.sync(repository.pulp_href, {"remote": remote.pulp_href})
+    result = gem_bindings.RepositoriesGemApi.sync(
+        repository.pulp_href, {"remote": remote.pulp_href}
+    )
     monitor_task(result.task)
-    repository = gem_repository_api_client.read(repository.pulp_href)
+    repository = gem_bindings.RepositoriesGemApi.read(repository.pulp_href)
 
     # Step 1
-    content = gem_content_api_client.list(repository_version=repository.latest_version_href)
+    content = gem_bindings.ContentGemApi.list(repository_version=repository.latest_version_href)
     for i, gem_content in enumerate(content.results):
         repo_ver_href = f"{repository.versions_href}{i}/"
         body = {"add_content_units": [gem_content.pulp_href], "base_version": repo_ver_href}
-        result = gem_repository_api_client.modify(repository.pulp_href, body)
+        result = gem_bindings.RepositoriesGemApi.modify(repository.pulp_href, body)
         monitor_task(result.task)
 
-    repository = gem_repository_api_client.read(repository.pulp_href)
+    repository = gem_bindings.RepositoriesGemApi.read(repository.pulp_href)
     assert repository.latest_version_href.endswith(f"/{content.count + 1}/")
 
-    versions = gem_repository_version_api_client.list(repository.pulp_href)
+    versions = gem_bindings.RepositoriesGemVersionsApi.list(repository.pulp_href)
     # This is in descending order, so latest first
     version_hrefs = [ver.pulp_href for ver in versions.results]
     non_latest = choice(version_hrefs[:-1])

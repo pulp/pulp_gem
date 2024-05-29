@@ -11,8 +11,7 @@ from pulp_gem.tests.functional.constants import DOWNLOAD_POLICIES, GEM_FIXTURE_U
 @pytest.mark.parametrize("policy", DOWNLOAD_POLICIES)
 def test_download_content(
     policy,
-    gem_repository_api_client,
-    gem_content_api_client,
+    gem_bindings,
     gem_repository_factory,
     gem_remote_factory,
     gem_publication_factory,
@@ -36,9 +35,9 @@ def test_download_content(
 
     # Sync repository
     body = {"remote": remote.pulp_href}
-    result = gem_repository_api_client.sync(repository.pulp_href, body)
+    result = gem_bindings.RepositoriesGemApi.sync(repository.pulp_href, body)
     monitor_task(result.task)
-    repo = gem_repository_api_client.read(repository.pulp_href)
+    repo = gem_bindings.RepositoriesGemApi.read(repository.pulp_href)
 
     # Create a publication.
     publication = gem_publication_factory(repository=repository.pulp_href)
@@ -47,7 +46,7 @@ def test_download_content(
     distribution = gem_distribution_factory(publication=publication.pulp_href)
 
     # Pick a content unit, and download it from both Pulp Fixtures…
-    content = gem_content_api_client.list(repository_version=repo.latest_version_href)
+    content = gem_bindings.ContentGemApi.list(repository_version=repo.latest_version_href)
     content_paths = [f"gems/{c.name}-{c.version}.gem" for c in content.results]
     unit_path = choice(content_paths)
     fixtures_hash = hashlib.sha256(http_get(urljoin(GEM_FIXTURE_URL, unit_path))).hexdigest()
