@@ -12,7 +12,7 @@ from pulpcore.tests.functional.utils import PulpTaskError
 
 
 @pytest.fixture
-def do_sync(gem_repository_api_client, gem_repository_factory, gem_remote_factory, monitor_task):
+def do_sync(gem_bindings, gem_repository_factory, gem_remote_factory, monitor_task):
     """Factory fixture to perform a sync."""
 
     def _do_sync(repo=None, remote=None, url=GEM_FIXTURE_URL, policy="immediate"):
@@ -26,9 +26,9 @@ def do_sync(gem_repository_api_client, gem_repository_factory, gem_remote_factor
         else:
             sync_args = {}
 
-        result = gem_repository_api_client.sync(repo.pulp_href, sync_args)
+        result = gem_bindings.RepositoriesGemApi.sync(repo.pulp_href, sync_args)
         monitor_task(result.task)
-        repo = gem_repository_api_client.read(repo.pulp_href)
+        repo = gem_bindings.RepositoriesGemApi.read(repo.pulp_href)
         return repo, remote
 
     return _do_sync
@@ -37,10 +37,9 @@ def do_sync(gem_repository_api_client, gem_repository_factory, gem_remote_factor
 @pytest.mark.parallel
 @pytest.mark.parametrize("download_policy", DOWNLOAD_POLICIES)
 def test_download_policies(
+    gem_bindings,
     download_policy,
     do_sync,
-    gem_repository_api_client,
-    gem_repository_version_api_client,
     monitor_task,
 ):
     """Sync repositories with the different ``download_policy``.
@@ -59,18 +58,18 @@ def test_download_policies(
     repo, remote = do_sync(policy=download_policy)
 
     assert repo.latest_version_href.endswith("/1/")
-    repo_ver = gem_repository_version_api_client.read(repo.latest_version_href)
+    repo_ver = gem_bindings.RepositoriesGemVersionsApi.read(repo.latest_version_href)
     present_summary = {k: v["count"] for k, v in repo_ver.content_summary.present.items()}
     assert present_summary == GEM_FIXTURE_SUMMARY
     added_summary = {k: v["count"] for k, v in repo_ver.content_summary.added.items()}
     assert added_summary == GEM_FIXTURE_SUMMARY
 
     # Sync the repository again.
-    update_task = gem_repository_api_client.partial_update(
+    update_task = gem_bindings.RepositoriesGemApi.partial_update(
         repo.pulp_href, {"remote": remote.pulp_href}
     ).task
     monitor_task(update_task)
-    repo = gem_repository_api_client.read(repo.pulp_href)
+    repo = gem_bindings.RepositoriesGemApi.read(repo.pulp_href)
     repo2, _ = do_sync(repo=repo, remote=remote)
     assert repo2.latest_version_href == repo.latest_version_href
 

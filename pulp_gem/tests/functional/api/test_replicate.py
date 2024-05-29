@@ -4,9 +4,10 @@ import uuid
 
 @pytest.mark.parallel
 def test_replication(
+    pulpcore_bindings,
+    gem_bindings,
     domain_factory,
     bindings_cfg,
-    upstream_pulp_api_client,
     monitor_task,
     monitor_task_group,
     pulp_settings,
@@ -15,10 +16,6 @@ def test_replication(
     gem_distribution_factory,
     gem_publication_factory,
     gem_repository_factory,
-    gem_distribution_api_client,
-    gem_remote_api_client,
-    gem_repository_api_client,
-    gem_content_api_client,
     gem_content_artifact,
 ):
     # This test assures that an Upstream Pulp can be created in a non-default domain and that this
@@ -32,7 +29,7 @@ def test_replication(
 
     # Add stuff to it
     repository = gem_repository_factory(pulp_domain=source_domain.name)
-    content_response = gem_content_api_client.create(
+    content_response = gem_bindings.ContentGemApi.create(
         file=gem_content_artifact, repository=repository.pulp_href, pulp_domain=source_domain.name
     )
     monitor_task(content_response.task)
@@ -51,26 +48,26 @@ def test_replication(
         "password": bindings_cfg.password,
     }
     upstream_pulp = gen_object_with_cleanup(
-        upstream_pulp_api_client, upstream_pulp_body, pulp_domain=replica_domain.name
+        pulpcore_bindings.UpstreamPulpsApi, upstream_pulp_body, pulp_domain=replica_domain.name
     )
     # Run the replicate task and assert that all tasks successfully complete.
-    response = upstream_pulp_api_client.replicate(upstream_pulp.pulp_href)
+    response = pulpcore_bindings.UpstreamPulpsApi.replicate(upstream_pulp.pulp_href)
     monitor_task_group(response.task_group)
 
     for api_client in (
-        gem_distribution_api_client,
-        gem_remote_api_client,
-        gem_repository_api_client,
+        gem_bindings.DistributionsGemApi,
+        gem_bindings.RemotesGemApi,
+        gem_bindings.RepositoriesGemApi,
     ):
         result = api_client.list(pulp_domain=replica_domain.name)
         for item in result.results:
             add_to_cleanup(api_client, item)
 
     for api_client in (
-        gem_distribution_api_client,
-        gem_remote_api_client,
-        gem_repository_api_client,
-        gem_content_api_client,
+        gem_bindings.DistributionsGemApi,
+        gem_bindings.RemotesGemApi,
+        gem_bindings.RepositoriesGemApi,
+        gem_bindings.ContentGemApi,
     ):
         result = api_client.list(pulp_domain=replica_domain.name)
         assert result.count == 1
