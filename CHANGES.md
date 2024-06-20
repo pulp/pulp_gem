@@ -8,6 +8,20 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.6.0 (2024-06-19) {: #0.6.0 }
+
+
+#### Deprecations and Removals {: #0.6.0-removal }
+
+- Bumped miminal pulpcore requirement to 3.49.0.
+- Droped support for python 3.8.
+
+#### Misc {: #0.6.0-misc }
+
+- 
+
+---
+
 ## 0.5.1 (2024-05-23) {: #0.5.1 }
 
 ### Bugfixes
