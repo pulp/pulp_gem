@@ -8,6 +8,15 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.6.1 (2024-06-26) {: #0.6.1 }
+
+
+#### Bugfixes {: #0.6.1-bugfix }
+
+- Allowed pulp-glue-gem version 0.5.* to be installed.
+
+---
+
 ## 0.6.0 (2024-06-19) {: #0.6.0 }
 
 
