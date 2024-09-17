@@ -188,6 +188,9 @@ class GemFirstStage(Stage):
                     info_url = urljoin(urljoin(self.remote.url, "info/"), name)
                     if "md5" in settings.ALLOWED_CONTENT_CHECKSUMS:
                         extra_kwargs = {"expected_digests": {"md5": md5_sum}}
+                    elif md5_sum is None:
+                        extra_kwargs = {}
+                        log.warn(f"Checksum of info file for '{name}' was not provided.")
                     else:
                         extra_kwargs = {}
                         log.warn(f"Checksum of info file for '{name}' could not be validated.")

@@ -1,0 +1,1 @@
+Fixed handling somewhat inconsistent metadata on rubygems.org where an md5 checksum is missing in the versions file.

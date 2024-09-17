@@ -108,7 +108,11 @@ async def read_versions(relative_path):
                 continue
             if preamble:
                 continue
-            name, versions_str, md5_sum = line.split(" ", maxsplit=2)
+            # Dirty trick to make the md5sum default to None
+            split_line = line.split(" ", maxsplit=2) + [None]
+            name = split_line[0]
+            versions_str = split_line[1]
+            md5_sum = split_line[2]
             ext_versions = versions_str.split(",")
             entry = results.get(name) or ([], "")
             results[name] = (entry[0] + ext_versions, md5_sum)
