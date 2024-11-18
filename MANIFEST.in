@@ -4,7 +4,6 @@ include COPYRIGHT
 include README.md
 include functest_requirements.txt
 include LICENSE
-include requirements.txt
 include test_requirements.txt
 include unittest_requirements.txt
 include pyproject.toml
