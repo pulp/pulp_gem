@@ -41,6 +41,33 @@ pulp_gem = "pulp_gem:default_app_config"
 [tool.setuptools.packages.find]
 where = ["."]
 
+[tool.bumpversion]
+current_version = "0.7.0.dev"
+commit = false
+tag = false
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)(\\.(?P<release>[a-z]+))?"
+serialize = [
+	"{major}.{minor}.{patch}.{release}",
+	"{major}.{minor}.{patch}",
+]
+
+[tool.bumpversion.parts.release]
+optional_value = "prod"
+values = [
+	"dev",
+	"prod",
+]
+
+[[tool.bumpversion.files]]
+filename = "./pulp_gem/app/__init__.py"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
+[[tool.bumpversion.files]]
+filename = "./pyproject.toml"
+search = "version = \"{current_version}\""
+replace = "version = \"{new_version}\""
+
 [tool.towncrier]
 package = "pulp_gem"
 filename = "CHANGES.md"
@@ -71,18 +98,11 @@ exclude = '''
 
 [tool.check-manifest]
 ignore = [
-    ".bumpversion.cfg",
     "CHANGES/**",
-    "CONTRIBUTING.rst",
-    "CODEOWNERS",
-    "HISTORY.rst",
     "dev_requirements.txt",
     "doc_requirements.txt",
     "docs/**",
-    "staging_docs/**",
     "template_config.yml",
-    ".travis/**",
-    ".travis.yml",
     ".pep8speaks.yml",
     ".ci/**",
     ".github/**",
