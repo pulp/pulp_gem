@@ -2,7 +2,7 @@
 
 ### Server Installation
 
-Follow the [Installation Quickstart](site:pulp-oci-images/docs/admin/tutorials/quickstart.md) instructions to get started with Pulp.
+Follow the [Installation Quickstart](site:pulp-oci-images/docs/admin/tutorials/quickstart) instructions to get started with Pulp.
 Further details are discussed in the [pulpcore documentation](https://docs.pulpproject.org/pulpcore/installation/instructions.html).
 
 ### CLI Installation
