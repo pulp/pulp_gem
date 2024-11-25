@@ -42,6 +42,8 @@ pulp_gem = "pulp_gem:default_app_config"
 where = ["."]
 
 [tool.bumpversion]
+# This section is managed by the plugin template. Do not edit manually.
+
 current_version = "0.7.0.dev"
 commit = false
 tag = false
@@ -52,6 +54,8 @@ serialize = [
 ]
 
 [tool.bumpversion.parts.release]
+# This section is managed by the plugin template. Do not edit manually.
+
 optional_value = "prod"
 values = [
 	"dev",
@@ -59,15 +63,18 @@ values = [
 ]
 
 [[tool.bumpversion.files]]
+# This section is managed by the plugin template. Do not edit manually.
+
 filename = "./pulp_gem/app/__init__.py"
 search = "version = \"{current_version}\""
 replace = "version = \"{new_version}\""
 
 [[tool.bumpversion.files]]
+# This section is managed by the plugin template. Do not edit manually.
+
 filename = "./pyproject.toml"
 search = "version = \"{current_version}\""
 replace = "version = \"{new_version}\""
-
 [tool.towncrier]
 package = "pulp_gem"
 filename = "CHANGES.md"
