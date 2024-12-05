@@ -6,8 +6,8 @@ pks_to_delete = []
 
 
 def migrate_data_from_old_master_model_to_new_master_model(apps, schema_editor):
-    GemDistribution = apps.get_model('gem', 'GemDistribution')
-    CoreDistribution = apps.get_model('core', 'Distribution')
+    GemDistribution = apps.get_model("gem", "GemDistribution")
+    CoreDistribution = apps.get_model("core", "Distribution")
     for old_gem_distribution in GemDistribution.objects.all():
         with transaction.atomic():
             new_master_model_entry = CoreDistribution(
@@ -36,39 +36,48 @@ def delete_remaining_old_master_model_entries(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0062_add_new_distribution_mastermodel'),
-        ('gem', '0002_gemrepository'),
+        ("gem", "0002_gemrepository"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='GemDistribution',
-            name='distribution_ptr',
-            field=models.OneToOneField(auto_created=True, null=True, default=None,
-                                       on_delete=django.db.models.deletion.CASCADE,
-                                       parent_link=True, primary_key=False,
-                                       related_name='gem_gemdistribution', serialize=False,
-                                       to='core.Distribution'),
+            model_name="GemDistribution",
+            name="distribution_ptr",
+            field=models.OneToOneField(
+                auto_created=True,
+                null=True,
+                default=None,
+                on_delete=django.db.models.deletion.CASCADE,
+                parent_link=True,
+                primary_key=False,
+                related_name="gem_gemdistribution",
+                serialize=False,
+                to="core.Distribution",
+            ),
             preserve_default=False,
         ),
-        migrations.RunPython(migrate_data_from_old_master_model_to_new_master_model),
+        migrations.RunPython(migrate_data_from_old_master_model_to_new_master_model, elidable=True),
         migrations.RemoveField(
-            model_name='GemDistribution',
-            name='basedistribution_ptr',
+            model_name="GemDistribution",
+            name="basedistribution_ptr",
         ),
         migrations.AlterField(
-            model_name='GemDistribution',
-            name='distribution_ptr',
-            field=models.OneToOneField(auto_created=True,
-                                       on_delete=django.db.models.deletion.CASCADE,
-                                       parent_link=True, primary_key=True,
-                                       related_name='gem_gemdistribution', serialize=False,
-                                       to='core.distribution'),
+            model_name="GemDistribution",
+            name="distribution_ptr",
+            field=models.OneToOneField(
+                auto_created=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                parent_link=True,
+                primary_key=True,
+                related_name="gem_gemdistribution",
+                serialize=False,
+                to="core.distribution",
+            ),
             preserve_default=False,
         ),
         migrations.RemoveField(
-            model_name='GemDistribution',
-            name='publication',
+            model_name="GemDistribution",
+            name="publication",
         ),
-        migrations.RunPython(delete_remaining_old_master_model_entries),
+        migrations.RunPython(delete_remaining_old_master_model_entries, elidable=True),
     ]
