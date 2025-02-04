@@ -23,7 +23,7 @@ classifiers=[
 ]
 requires-python = ">=3.9"
 dependencies = [
-  "pulpcore>=3.49.0,<3.70",
+  "pulpcore>=3.70.0,<3.85",
   "pulp_glue_gem>=0.3.0,<0.6",
   "rubymarshal>=1.2.7,<1.3",
 ]
