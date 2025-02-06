@@ -9,7 +9,7 @@ def test_upload_content_unit(
     monitor_task,
     delete_orphans_pre,
 ):
-    response = gem_bindings.ContentGemApi.create(file=gem_content_artifact)
+    response = gem_bindings.ContentGemApi.create(file=str(gem_content_artifact))
     task = monitor_task(response.task)
     assert len(task.created_resources) == 1
 
@@ -18,7 +18,7 @@ def test_upload_content_unit(
     assert content.version == "1.0.0"
 
     # Upload again
-    response = gem_bindings.ContentGemApi.create(file=gem_content_artifact)
+    response = gem_bindings.ContentGemApi.create(file=str(gem_content_artifact))
     task = monitor_task(response.task)
     assert len(task.created_resources) == 1
     assert task.created_resources[0] == content.pulp_href
@@ -33,7 +33,7 @@ def test_crud_content_unit(
 ):
     """CRUD content unit."""
     # 01 test create
-    artifact = pulpcore_bindings.ArtifactsApi.create(gem_content_artifact)
+    artifact = pulpcore_bindings.ArtifactsApi.create(file=str(gem_content_artifact))
     response = gem_bindings.ContentGemApi.create(artifact=artifact.pulp_href)
     task = monitor_task(response.task)
     assert len(task.created_resources) == 1
