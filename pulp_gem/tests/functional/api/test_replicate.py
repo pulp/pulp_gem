@@ -30,7 +30,9 @@ def test_replication(
     # Add stuff to it
     repository = gem_repository_factory(pulp_domain=source_domain.name)
     content_response = gem_bindings.ContentGemApi.create(
-        file=gem_content_artifact, repository=repository.pulp_href, pulp_domain=source_domain.name
+        file=str(gem_content_artifact),
+        repository=repository.pulp_href,
+        pulp_domain=source_domain.name,
     )
     monitor_task(content_response.task)
     publication = gem_publication_factory(
