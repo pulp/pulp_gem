@@ -81,7 +81,7 @@ def test_invalid_url(do_sync):
         # This url is an actual website...
         do_sync(url="http://i-am-an-invalid-url.com/invalid/")
     # TODO fix sync to give a proper error when an invalid url is passed
-    assert exc.value.task.to_dict()["error"]["description"] is not None
+    assert exc.value.task.error["description"] is not None
 
 
 # Provide an invalid repository and specify keywords in the anticipated error message
