@@ -48,6 +48,7 @@ def test_replication(
         "domain": source_domain.name,
         "username": bindings_cfg.username,
         "password": bindings_cfg.password,
+        "tls_validation": False,
     }
     upstream_pulp = gen_object_with_cleanup(
         pulpcore_bindings.UpstreamPulpsApi, upstream_pulp_body, pulp_domain=replica_domain.name
