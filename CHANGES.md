@@ -8,6 +8,25 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.7.0 (2025-03-18) {: #0.7.0 }
+
+#### Bugfixes {: #0.7.0-bugfix }
+
+- Fixed handling somewhat inconsistent metadata on rubygems.org where an md5 checksum is missing in the versions file.
+  [#313](https://github.com/pulp/pulp_gem/issues/313)
+- Allowed pulp-glue-gem version 0.5.* to be installed.
+
+#### Deprecations and Removals {: #0.7.0-removal }
+
+- Squashed and rebased old migrations (before the 0.4 release) to prepare for pulpcore 3.70 compatibility.
+  [#334](https://github.com/pulp/pulp_gem/issues/334)
+
+#### Misc {: #0.7.0-misc }
+
+- [#339](https://github.com/pulp/pulp_gem/issues/339)
+
+---
+
 ## 0.6.2 (2025-02-10) {: #0.6.2 }
 
 #### Misc {: #0.6.2-misc }
