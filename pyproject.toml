@@ -38,6 +38,9 @@ Changelog = "https://pulpproject.org/pulp_gem/changes/"
 [project.entry-points."pulpcore.plugin"]
 pulp_gem = "pulp_gem:default_app_config"
 
+[project.entry-points."pytest11"]
+pulp_gem = "pulp_gem.pytest_plugin"
+
 [tool.setuptools.packages.find]
 where = ["."]
 
