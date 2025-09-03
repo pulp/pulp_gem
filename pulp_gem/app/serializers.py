@@ -4,17 +4,17 @@ import tempfile
 import hashlib
 import os
 
+from django.db import DatabaseError
 from rest_framework.serializers import (
     BooleanField,
     CharField,
     ChoiceField,
-    FileField,
     HStoreField,
-    ValidationError,
 )
 
 from pulpcore.plugin.models import Artifact, Publication, Remote, Repository
 from pulpcore.plugin.serializers import (
+    ArtifactSerializer,
     DetailRelatedField,
     MultipleArtifactContentSerializer,
     PublicationSerializer,
@@ -23,6 +23,7 @@ from pulpcore.plugin.serializers import (
     RepositorySerializer,
     SingleContentArtifactField,
 )
+from pulpcore.plugin.serializers.content import UploadSerializerFieldsMixin
 from pulpcore.plugin.util import get_domain_pk
 
 from pulp_gem.app.models import (
@@ -50,20 +51,13 @@ def _artifact_from_data(raw_data):
     return artifact
 
 
-class GemContentSerializer(MultipleArtifactContentSerializer):
+class GemContentSerializer(MultipleArtifactContentSerializer, UploadSerializerFieldsMixin):
     """
     A Serializer for GemContent.
     """
 
     artifact = SingleContentArtifactField(
         help_text=_("Artifact file representing the physical content"),
-        required=False,
-        write_only=True,
-    )
-    file = FileField(
-        help_text=_(
-            "An uploaded file that should be turned into the artifact of the content unit."
-        ),
         required=False,
         write_only=True,
     )
@@ -92,25 +86,29 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         super().__init__(*args, **kwargs)
         self.fields["artifacts"].read_only = True
 
-    def validate(self, data):
-        """Validate the GemContent data."""
-        data = super().validate(data)
-
-        if "file" in data:
-            if "artifact" in data:
-                raise ValidationError(_("Only one of 'file' and 'artifact' may be specified."))
-            data["artifact"] = Artifact.init_and_validate(data.pop("file"))
-        elif "artifact" not in data:
-            raise ValidationError(_("One of 'file' and 'artifact' must be specified."))
-
-        if self.context.get("request") is None:
-            data = self.deferred_validate(data)
-
-        return data
-
     def deferred_validate(self, data):
         """Validate the GemContent data (deferred)."""
-        artifact = data.pop("artifact")
+        data = super().deferred_validate(data)
+
+        if "file" in data:
+            file = data.pop("file")
+            # if artifact already exists, let's use it
+            try:
+                artifact = Artifact.objects.get(
+                    sha256=file.hashers["sha256"].hexdigest(), pulp_domain=get_domain_pk()
+                )
+                if not artifact.pulp_domain.get_storage().exists(artifact.file.name):
+                    artifact.file = file
+                    artifact.save()
+                else:
+                    artifact.touch()
+            except (Artifact.DoesNotExist, DatabaseError):
+                artifact_data = {"file": file}
+                serializer = ArtifactSerializer(data=artifact_data)
+                serializer.is_valid(raise_exception=True)
+                artifact = serializer.save()
+        else:
+            artifact = data.pop("artifact")
 
         gem_info, spec_data = analyse_gem(artifact.file)
         relative_path = os.path.join("gems", gem_info["name"] + "-" + gem_info["version"] + ".gem")
@@ -132,18 +130,21 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         ).first()
 
     class Meta:
-        fields = MultipleArtifactContentSerializer.Meta.fields + (
-            "artifact",
-            "file",
-            "repository",
-            "checksum",
-            "name",
-            "version",
-            "platform",
-            "prerelease",
-            "dependencies",
-            "required_ruby_version",
-            "required_rubygems_version",
+        fields = (
+            MultipleArtifactContentSerializer.Meta.fields
+            + UploadSerializerFieldsMixin.Meta.fields
+            + (
+                "artifact",
+                "repository",
+                "checksum",
+                "name",
+                "version",
+                "platform",
+                "prerelease",
+                "dependencies",
+                "required_ruby_version",
+                "required_rubygems_version",
+            )
         )
         model = GemContent
 
