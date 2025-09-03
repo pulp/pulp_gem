@@ -8,6 +8,14 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.7.3 (2025-09-03) {: #0.7.3 }
+
+#### Bugfixes {: #0.7.3-bugfix }
+
+- Fixed a bug where upload fails due to improperly determining deferred serialization.
+
+---
+
 ## 0.7.2 (2025-08-13) {: #0.7.2 }
 
 No significant changes.
