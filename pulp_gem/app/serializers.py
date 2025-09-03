@@ -103,7 +103,7 @@ class GemContentSerializer(MultipleArtifactContentSerializer):
         elif "artifact" not in data:
             raise ValidationError(_("One of 'file' and 'artifact' must be specified."))
 
-        if "request" not in self.context:
+        if self.context.get("request") is None:
             data = self.deferred_validate(data)
 
         return data
