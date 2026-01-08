@@ -8,6 +8,20 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.7.5 (2026-01-07) {: #0.7.5 }
+
+#### Features {: #0.7.5-feature }
+
+- Bump pulpcore upperbound to <3.115.
+
+---
+
+## 0.7.4 (2026-01-07) {: #0.7.4 }
+
+No significant changes.
+
+---
+
 ## 0.7.3 (2025-09-03) {: #0.7.3 }
 
 #### Bugfixes {: #0.7.3-bugfix }
