@@ -44,10 +44,6 @@ cp ~/.config/pulp/cli.toml "${REPO_ROOT}/../pulp-cli-gem/tests/cli.toml"
 ansible-playbook build_container.yaml
 ansible-playbook start_container.yaml
 
-# .config needs to be accessible by the pulp user in the container, but some
-# files will likely be modified on the host by post/pre scripts.
-chmod 777 ~/.config/pulp_smash/
-chmod 666 ~/.config/pulp_smash/settings.json
 # Plugins often write to ~/.config/pulp/cli.toml from the host
 chmod 777 ~/.config/pulp
 chmod 666 ~/.config/pulp/cli.toml
@@ -76,6 +72,12 @@ fi
 # Needed for some functional tests
 cmd_prefix bash -c "echo '%wheel        ALL=(ALL)       NOPASSWD: ALL' > /etc/sudoers.d/nopasswd"
 cmd_prefix bash -c "usermod -a -G wheel pulp"
+
+# In some scenarios we want to simulate a failed redis cache.
+if [[ " s3 " =~ " ${TEST} " ]]; then
+  cmd_prefix bash -c "s6-rc -d change redis"
+  echo "The Redis service was disabled for $TEST"
+fi
 
 # Lots of plugins try to use this path, and throw warnings if they cannot access it.
 cmd_prefix mkdir /.pytest_cache
