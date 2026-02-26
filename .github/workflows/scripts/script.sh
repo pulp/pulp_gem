@@ -144,7 +144,7 @@ else
 fi
 pushd ../pulp-cli-gem
 pip install -r test_requirements.txt
-pytest -v -m "pulp_gem"
+pytest -v tests -m "pulp_gem"
 popd
 
 if [ -f "$POST_SCRIPT" ]; then
