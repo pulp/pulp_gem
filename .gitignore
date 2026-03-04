@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.ci/ansible/Containerfile
+.ci/ansible/settings/
+.ci/ansible/vars/
+
 # C extensions
 *.so
 
