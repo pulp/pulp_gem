@@ -26,7 +26,7 @@ fi
 COMPONENT_VERSION="$(bump-my-version show current_version | tail -n -1 | python -c 'from packaging.version import Version; print(Version(input()))')"
 COMPONENT_SOURCE="./pulp_gem/dist/pulp_gem-${COMPONENT_VERSION}-py3-none-any.whl"
 if [ "$TEST" = "s3" ]; then
-  COMPONENT_SOURCE="${COMPONENT_SOURCE} pulpcore[s3]"
+  COMPONENT_SOURCE="${COMPONENT_SOURCE} pulpcore[s3] git+https://github.com/gerrod3/botocore.git@fix-100-continue"
 fi
 if [ "$TEST" = "azure" ]; then
   COMPONENT_SOURCE="${COMPONENT_SOURCE} pulpcore[azure]"
@@ -38,9 +38,6 @@ fi
 if [[ "$TEST" = "lowerbounds" ]]; then
   python3 .ci/scripts/calc_constraints.py pyproject.toml > lowerbounds_constraints.txt
 fi
-export PULP_API_ROOT=$(test "${TEST}" = "s3" && echo "/rerouted/djnd/" || echo "/pulp/")
-
-echo "PULP_API_ROOT=${PULP_API_ROOT}" >> "$GITHUB_ENV"
 
 # Compose the scenario definition.
 mkdir -p .ci/ansible/vars
@@ -48,30 +45,30 @@ mkdir -p .ci/ansible/vars
 cat > .ci/ansible/vars/main.yaml << VARSYAML
 ---
 scenario: "${TEST}"
+plugin_name: "pulp_gem"
 legacy_component_name: "pulp_gem"
 component_name: "gem"
 component_version: "${COMPONENT_VERSION}"
 pulp_env: {}
-pulp_settings: null
+pulp_settings: {"api_root": "/pulp/"}
 pulp_scheme: "https"
-pulp_default_container: "ghcr.io/pulp/pulp-ci-centos9:latest"
-api_root: "${PULP_API_ROOT}"
 image:
   name: "pulp"
   tag: "ci_build"
-plugins:
-  - name: "pulp_gem"
-    source: "${COMPONENT_SOURCE}"
-    ci_requirements: $(test -f ci_requirements.txt && echo -n true || echo -n false)
-    upperbounds: $(test "${TEST}" = "pulp" && echo -n true || echo -n false)
-    lowerbounds: $(test "${TEST}" = "lowerbounds" && echo -n true || echo -n false)
+  ci_base: "ghcr.io/pulp/pulp-ci-centos9:latest"
+  source: "${COMPONENT_SOURCE}"
+  ci_requirements: $(test -f ci_requirements.txt && echo -n true || echo -n false)
+  upperbounds: $(test "${TEST}" = "pulp" && echo -n true || echo -n false)
+  lowerbounds: $(test "${TEST}" = "lowerbounds" && echo -n true || echo -n false)
+  webserver_snippet: $(test -f pulp_gem/app/webserver_snippets/nginx.conf && echo -n true || echo -n false )
+extra_files:
+  - origin: "pulp_gem"
+    destination: "pulp_gem"
 services:
   - name: "pulp"
     image: "pulp:ci_build"
     volumes:
       - "./settings:/etc/pulp"
-      - "./ssh:/keys/"
-      - "~/.config:/var/lib/pulp/.config"
       - "../../../pulp-openapi-generator:/root/pulp-openapi-generator"
     env:
       PULP_WORKERS: "4"
@@ -91,7 +88,7 @@ if [ "$TEST" = "s3" ]; then
 s3_test: true
 minio_access_key: "${MINIO_ACCESS_KEY}"
 minio_secret_key: "${MINIO_SECRET_KEY}"
-pulp_scenario_settings: {"MEDIA_ROOT": "", "STORAGES": {"default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage", "OPTIONS": {"access_key": "AKIAIT2Z5TDYPX3ARJBA", "addressing_style": "path", "bucket_name": "pulp3", "default_acl": "@none", "endpoint_url": "http://minio:9000", "region_name": "eu-central-1", "secret_key": "fqRvjWaPU5o0fCqQuUWbj9Fainj2pVZtBCiDiieS", "signature_version": "s3v4"}}, "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}, "allowed_content_checksums": ["md5", "sha224", "sha256", "sha384", "sha512"], "domain_enabled": true}
+pulp_scenario_settings: {"MEDIA_ROOT": "", "STORAGES": {"default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage", "OPTIONS": {"access_key": "AKIAIT2Z5TDYPX3ARJBA", "addressing_style": "path", "bucket_name": "pulp3", "default_acl": "@none", "endpoint_url": "http://minio:9000", "region_name": "eu-central-1", "secret_key": "fqRvjWaPU5o0fCqQuUWbj9Fainj2pVZtBCiDiieS", "signature_version": "s3v4"}}, "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}, "allowed_content_checksums": ["md5", "sha224", "sha256", "sha384", "sha512"], "api_root": "/rerouted/djnd/", "domain_enabled": true}
 pulp_scenario_env: {}
 VARSYAML
 fi
