@@ -6,7 +6,6 @@
 # After editing this file please always reapply the plugin template before committing any changes.
 
 ---
-api_root: "/pulp/"
 black: true
 check_commit_message: true
 check_gettext: true
@@ -42,7 +41,8 @@ pulp_env_azure: {}
 pulp_env_gcp: {}
 pulp_env_s3: {}
 pulp_scheme: "https"
-pulp_settings: null
+pulp_settings:
+  api_root: "/pulp/"
 pulp_settings_azure:
   MEDIA_ROOT: ""
   STORAGES:
@@ -91,6 +91,7 @@ pulp_settings_s3:
     - "sha256"
     - "sha384"
     - "sha512"
+  api_root: "/rerouted/djnd/"
   domain_enabled: true
 pydocstyle: true
 release_email: "pulp-infra@redhat.com"
@@ -107,7 +108,6 @@ test_deprecations: true
 test_gcp: false
 test_lowerbounds: true
 test_performance: false
-test_reroute: true
 test_s3: true
 use_issue_template: true
 ...

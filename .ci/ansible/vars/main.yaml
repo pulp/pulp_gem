@@ -1,0 +1,43 @@
+---
+scenario: "s3"
+plugin_name: "pulp_gem"
+legacy_component_name: "pulp_gem"
+component_name: "gem"
+component_version: "0.8.0.dev0"
+pulp_env: {}
+pulp_settings: null
+pulp_scheme: "https"
+api_root: "/rerouted/djnd/"
+image:
+  name: "pulp"
+  tag: "ci_build"
+  ci_base: "ghcr.io/pulp/pulp-ci-centos9:latest"
+  source: "./pulp_gem/dist/pulp_gem-0.8.0.dev0-py3-none-any.whl pulpcore[s3] git+https://github.com/gerrod3/botocore.git@fix-100-continue"
+  ci_requirements: false
+  upperbounds: false
+  lowerbounds: false
+  webserver_snippet: false
+extra_files:
+  - origin: "pulp_gem"
+    destination: "pulp_gem"
+services:
+  - name: "pulp"
+    image: "pulp:ci_build"
+    volumes:
+      - "./settings:/etc/pulp"
+      - "../../../pulp-openapi-generator:/root/pulp-openapi-generator"
+    env:
+      PULP_WORKERS: "4"
+      PULP_HTTPS: "true"
+  - name: "minio"
+    image: "minio/minio"
+    env:
+      MINIO_ACCESS_KEY: "AKIAIT2Z5TDYPX3ARJBA"
+      MINIO_SECRET_KEY: "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"
+    command: "server /data"
+s3_test: true
+minio_access_key: "AKIAIT2Z5TDYPX3ARJBA"
+minio_secret_key: "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"
+pulp_scenario_settings: {"MEDIA_ROOT": "", "STORAGES": {"default": {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage", "OPTIONS": {"access_key": "AKIAIT2Z5TDYPX3ARJBA", "addressing_style": "path", "bucket_name": "pulp3", "default_acl": "@none", "endpoint_url": "http://minio:9000", "region_name": "eu-central-1", "secret_key": "fqRvjWaPU5o0fCqQuUWbj9Fainj2pVZtBCiDiieS", "signature_version": "s3v4"}}, "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}}, "allowed_content_checksums": ["md5", "sha224", "sha256", "sha384", "sha512"], "domain_enabled": true}
+pulp_scenario_env: {}
+...
