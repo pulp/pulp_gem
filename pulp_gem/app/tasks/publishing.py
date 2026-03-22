@@ -23,7 +23,6 @@ from pulpcore.plugin.models import (
 from pulp_gem.app.models import GemContent, GemPublication
 from pulp_gem.specs import ruby_ver_cmp, write_specs, GemKey
 
-
 log = logging.getLogger(__name__)
 
 
