@@ -17,7 +17,6 @@ from pulpcore.plugin.util import get_domain_pk
 
 from pulp_gem.specs import analyse_gem
 
-
 log = getLogger(__name__)
 
 

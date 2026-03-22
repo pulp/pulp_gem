@@ -14,7 +14,6 @@ import rubymarshal.classes
 import rubymarshal.writer
 import rubymarshal.reader
 
-
 log = getLogger(__name__)
 
 NAME_REGEX = re.compile(r"[\w\.-]+")
