@@ -24,7 +24,6 @@ from pulp_gem.specs import (
     split_ext_version,
 )
 
-
 log = logging.getLogger(__name__)
 
 
