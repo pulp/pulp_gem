@@ -9,3 +9,5 @@ include test_requirements.txt
 include unittest_requirements.txt
 include pyproject.toml
 exclude releasing.md
+
+exclude .gitleaks.toml
