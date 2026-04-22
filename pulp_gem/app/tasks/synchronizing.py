@@ -14,6 +14,7 @@ from pulpcore.plugin.stages import (
     Stage,
 )
 
+from pulp_gem.app.exceptions import RemoteConnectionError, RemoteURLRequiredError
 from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import (
     NAME_REGEX,
@@ -44,7 +45,7 @@ def synchronize(remote_pk, repository_pk, mirror=False):
     repository = Repository.objects.get(pk=repository_pk)
 
     if not remote.url:
-        raise ValueError(_("A remote must have a url specified to synchronize."))
+        raise RemoteURLRequiredError()
 
     first_stage = GemFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
@@ -87,7 +88,7 @@ class GemFirstStage(Stage):
             try:
                 versions_result = await versions_downloader.run()
             except ClientConnectionError as e:
-                raise Exception(f"Could not connect to host {e.host}")
+                raise RemoteConnectionError(host=e.host)
             await pr_download_versions.aincrement()
 
         async with ProgressReport(message="Parsing versions list") as pr_parse_versions:

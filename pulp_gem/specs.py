@@ -14,6 +14,13 @@ import rubymarshal.classes
 import rubymarshal.writer
 import rubymarshal.reader
 
+from pulp_gem.app.exceptions import (
+    InvalidGemNameError,
+    InvalidRequirementError,
+    InvalidVersionStringError,
+    UnknownRubyClassError,
+)
+
 log = getLogger(__name__)
 
 NAME_REGEX = re.compile(r"[\w\.-]+")
@@ -118,7 +125,7 @@ async def read_versions(relative_path):
     for name, (ext_versions, md5_sum) in results.items():
         # Sanitize name
         if not NAME_REGEX.fullmatch(name):
-            raise ValueError(f"Invalid gem name: {name}")
+            raise InvalidGemNameError(name=name)
         yield name, ext_versions, md5_sum
 
 
@@ -159,7 +166,7 @@ async def read_info(relative_path, versions_info):
                 elif key == "rubygems":
                     gem_info["required_rubygems_version"] = value
                 else:
-                    raise ValueError(f"Invalid requirement: {stmt}")
+                    raise InvalidRequirementError(stmt=stmt)
             yield gem_info
 
 
@@ -348,7 +355,7 @@ def _yaml_ruby_constructor(loader, suffix, node):
     try:
         return rubymarshal.classes.registry[suffix].yaml_constructor(loader, node)
     except KeyError:
-        raise NotImplementedError(f"Unknown ruby class {suffix}.")
+        raise UnknownRubyClassError(suffix=suffix)
 
 
 yaml.add_multi_constructor("!ruby/object:", _yaml_ruby_constructor, Loader=RubyMarshalYamlLoader)
@@ -380,14 +387,14 @@ def analyse_gem(file_obj):
     }
     # Sanitize name
     if not NAME_REGEX.fullmatch(gem_info["name"]):
-        raise ValueError(f"Invalid gem name: {gem_info['name']}")
+        raise InvalidGemNameError(name=gem_info["name"])
     # Sanitize version
     if VERSION_REGEX.fullmatch(gem_info["version"]):
         gem_info["prerelease"] = False
     elif PRERELEASE_VERSION_REGEX.fullmatch(gem_info["version"]):
         gem_info["prerelease"] = True
     else:
-        raise ValueError(f"Invalid version string: {gem_info['version']}")
+        raise InvalidVersionStringError(version=gem_info["version"])
     for key in ("required_ruby_version", "required_rubygems_version"):
         if (requirement := data._private_data.get(key)) is not None:
             gem_info[key] = requirement.to_s()
