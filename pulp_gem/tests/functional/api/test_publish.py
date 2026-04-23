@@ -1,7 +1,8 @@
 """Tests that publish gem plugin repositories."""
 
-import pytest
 from random import choice
+
+import pytest
 
 
 @pytest.mark.parallel

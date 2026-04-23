@@ -1,10 +1,10 @@
-from pulpcore.plugin.replica import Replicator
-
 from pulp_glue.gem.context import (
     PulpGemDistributionContext,
     PulpGemPublicationContext,
     PulpGemRepositoryContext,
 )
+
+from pulpcore.plugin.replica import Replicator
 
 from pulp_gem.app.models import GemDistribution, GemRemote, GemRepository
 from pulp_gem.app.tasks import synchronize as gem_synchronize

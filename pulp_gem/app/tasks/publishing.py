@@ -4,24 +4,23 @@ import hashlib
 import logging
 import os
 import shutil
-
 from gettext import gettext as _
+from pathlib import Path
 
 from django.conf import settings
 from django.core.files import File
 from django.db import transaction
 from jinja2 import Template
-from pathlib import Path
 
 from pulpcore.plugin.models import (
     ContentArtifact,
-    RepositoryVersion,
     PublishedArtifact,
     PublishedMetadata,
+    RepositoryVersion,
 )
 
 from pulp_gem.app.models import GemContent, GemPublication
-from pulp_gem.specs import ruby_ver_cmp, write_specs, GemKey
+from pulp_gem.specs import GemKey, ruby_ver_cmp, write_specs
 
 log = logging.getLogger(__name__)
 
