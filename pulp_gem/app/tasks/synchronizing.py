@@ -1,9 +1,8 @@
 import logging
-
-from aiohttp import ClientConnectionError
 from gettext import gettext as _
 from urllib.parse import urljoin
 
+from aiohttp import ClientConnectionError
 from django.conf import settings
 
 from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
@@ -18,8 +17,8 @@ from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import (
     NAME_REGEX,
     PRERELEASE_VERSION_REGEX,
-    read_versions,
     read_info,
+    read_versions,
     ruby_ver_includes,
     split_ext_version,
 )

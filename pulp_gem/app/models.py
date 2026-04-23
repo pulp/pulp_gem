@@ -1,15 +1,15 @@
 from logging import getLogger
-
 from pathlib import PurePath
 from tempfile import NamedTemporaryFile
+
 from django.contrib.postgres.fields import HStoreField
 from django.db import models
 
 from pulpcore.plugin.models import (
     AutoAddObjPermsMixin,
     Content,
-    Publication,
     Distribution,
+    Publication,
     Remote,
     Repository,
 )
