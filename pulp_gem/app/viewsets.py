@@ -2,29 +2,29 @@ from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 
 from pulpcore.plugin.actions import ModifyRepositoryActionMixin
-from pulpcore.plugin.viewsets import (
-    DistributionViewSet,
-    ContentFilter,
-    SingleArtifactContentUploadViewSet,
-    OperationPostponedResponse,
-    PublicationViewSet,
-    RemoteViewSet,
-    RepositoryViewSet,
-    RepositoryVersionViewSet,
-    RolesMixin,
-)
 from pulpcore.plugin.serializers import (
     AsyncOperationResponseSerializer,
     RepositorySyncURLSerializer,
 )
 from pulpcore.plugin.tasking import dispatch
+from pulpcore.plugin.viewsets import (
+    ContentFilter,
+    DistributionViewSet,
+    OperationPostponedResponse,
+    PublicationViewSet,
+    RemoteViewSet,
+    RepositoryVersionViewSet,
+    RepositoryViewSet,
+    RolesMixin,
+    SingleArtifactContentUploadViewSet,
+)
 
 from pulp_gem.app import tasks
 from pulp_gem.app.models import (
     GemContent,
     GemDistribution,
-    GemRemote,
     GemPublication,
+    GemRemote,
     GemRepository,
 )
 from pulp_gem.app.serializers import (
