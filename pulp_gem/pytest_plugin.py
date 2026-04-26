@@ -1,7 +1,9 @@
 import uuid
 
 import pytest
+
 from pulpcore.tests.functional.utils import BindingsNamespace
+
 from pulp_gem.tests.functional.constants import GEM_FIXTURE_URL, GEM_URL
 
 # Api Bindings fixtures

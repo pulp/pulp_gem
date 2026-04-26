@@ -1,18 +1,17 @@
-from collections import namedtuple
-from logging import getLogger
-
-import aiofiles
 import datetime
-import zlib
 import gzip
 import re
-import yaml
+import zlib
+from collections import namedtuple
 from itertools import zip_longest
+from logging import getLogger
 from tarfile import TarFile
 
+import aiofiles
 import rubymarshal.classes
-import rubymarshal.writer
 import rubymarshal.reader
+import rubymarshal.writer
+import yaml
 
 log = getLogger(__name__)
 
