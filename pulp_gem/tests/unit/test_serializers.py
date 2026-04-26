@@ -1,11 +1,12 @@
 from unittest.mock import patch
-from django.test import TestCase
+
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
-
-from pulp_gem.app.serializers import GemContentSerializer
+from django.test import TestCase
 
 from pulpcore.plugin.models import Artifact
+
+from pulp_gem.app.serializers import GemContentSerializer
 
 CHECKSUM_LEN = {
     "md5": 32,

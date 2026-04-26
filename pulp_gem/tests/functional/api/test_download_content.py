@@ -1,9 +1,10 @@
 """Tests that verify download of content served by Pulp."""
 
-import pytest
 import hashlib
 from random import choice
 from urllib.parse import urljoin
+
+import pytest
 
 from pulp_gem.tests.functional.constants import DOWNLOAD_POLICIES, GEM_FIXTURE_URL
 

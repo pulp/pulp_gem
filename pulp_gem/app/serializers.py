@@ -1,8 +1,7 @@
-from gettext import gettext as _
-import tempfile
-
 import hashlib
 import os
+import tempfile
+from gettext import gettext as _
 
 from rest_framework.serializers import (
     BooleanField,
@@ -16,9 +15,9 @@ from rest_framework.serializers import (
 from pulpcore.plugin.models import Artifact, Publication, Remote, Repository
 from pulpcore.plugin.serializers import (
     DetailRelatedField,
+    DistributionSerializer,
     MultipleArtifactContentSerializer,
     PublicationSerializer,
-    DistributionSerializer,
     RemoteSerializer,
     RepositorySerializer,
     SingleContentArtifactField,
@@ -32,7 +31,6 @@ from pulp_gem.app.models import (
     GemRemote,
     GemRepository,
 )
-
 from pulp_gem.specs import analyse_gem
 
 

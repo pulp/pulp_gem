@@ -1,5 +1,6 @@
-import pytest
 import subprocess
+
+import pytest
 from aiohttp.client_exceptions import ClientResponseError
 
 
