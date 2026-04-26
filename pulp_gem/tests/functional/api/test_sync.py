@@ -2,13 +2,14 @@
 
 import pytest
 
+from pulpcore.tests.functional.utils import PulpTaskError
+
 from pulp_gem.tests.functional.constants import (
     DOWNLOAD_POLICIES,
     GEM_FIXTURE_SUMMARY,
-    GEM_INVALID_FIXTURE_URL,
     GEM_FIXTURE_URL,
+    GEM_INVALID_FIXTURE_URL,
 )
-from pulpcore.tests.functional.utils import PulpTaskError
 
 
 @pytest.fixture

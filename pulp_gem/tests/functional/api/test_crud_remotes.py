@@ -1,11 +1,12 @@
 """Tests that CRUD gem remotes."""
 
-import pytest
 import uuid
 from random import choice
 
+import pytest
 
 from pulpcore.client.pulp_gem import ApiException
+
 from pulp_gem.tests.functional.constants import DOWNLOAD_POLICIES, GEM_FIXTURE_URL
 
 
