@@ -3,17 +3,6 @@ from gettext import gettext as _
 from pulpcore.plugin.exceptions import PulpException
 
 
-class RemoteURLRequiredError(PulpException):
-    """
-    Raised when a sync is attempted without a URL on the remote.
-    """
-
-    error_code = "GEM0001"
-
-    def __str__(self):
-        return f"[{self.error_code}] " + _("A remote must have a url specified to synchronize.")
-
-
 class RemoteConnectionError(PulpException):
     """
     Raised when a connection to the remote host fails.
@@ -22,6 +11,7 @@ class RemoteConnectionError(PulpException):
     error_code = "GEM0002"
 
     def __init__(self, host):
+        super().__init__()
         self.host = host
 
     def __str__(self):
@@ -38,6 +28,7 @@ class InvalidGemNameError(PulpException):
     error_code = "GEM0003"
 
     def __init__(self, name):
+        super().__init__()
         self.name = name
 
     def __str__(self):
@@ -52,6 +43,7 @@ class InvalidRequirementError(PulpException):
     error_code = "GEM0004"
 
     def __init__(self, stmt):
+        super().__init__()
         self.stmt = stmt
 
     def __str__(self):
@@ -66,6 +58,7 @@ class InvalidVersionStringError(PulpException):
     error_code = "GEM0005"
 
     def __init__(self, version):
+        super().__init__()
         self.version = version
 
     def __str__(self):
@@ -82,6 +75,7 @@ class UnknownRubyClassError(PulpException):
     error_code = "GEM0006"
 
     def __init__(self, suffix):
+        super().__init__()
         self.suffix = suffix
 
     def __str__(self):

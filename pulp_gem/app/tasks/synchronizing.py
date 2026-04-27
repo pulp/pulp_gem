@@ -5,6 +5,7 @@ from urllib.parse import urljoin
 from aiohttp import ClientConnectionError
 from django.conf import settings
 
+from pulpcore.plugin.exceptions import SyncError
 from pulpcore.plugin.models import Artifact, ProgressReport, Remote, Repository
 from pulpcore.plugin.stages import (
     DeclarativeArtifact,
@@ -13,7 +14,7 @@ from pulpcore.plugin.stages import (
     Stage,
 )
 
-from pulp_gem.app.exceptions import RemoteConnectionError, RemoteURLRequiredError
+from pulp_gem.app.exceptions import RemoteConnectionError
 from pulp_gem.app.models import GemContent, GemRemote
 from pulp_gem.specs import (
     NAME_REGEX,
@@ -44,7 +45,7 @@ def synchronize(remote_pk, repository_pk, mirror=False):
     repository = Repository.objects.get(pk=repository_pk)
 
     if not remote.url:
-        raise RemoteURLRequiredError()
+        raise SyncError(_("A remote must have a url specified to synchronize."))
 
     first_stage = GemFirstStage(remote)
     dv = DeclarativeVersion(first_stage, repository, mirror=mirror)
