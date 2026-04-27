@@ -1,0 +1,1 @@
+Add __init__ to no-arg PulpException subclasses for pulpcore <3.103 compat.
