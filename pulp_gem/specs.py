@@ -157,7 +157,7 @@ async def read_info(relative_path, versions_info):
                     (item.split(":", maxsplit=1) for item in dependencies.split(","))
                 )
             for stmt in back.split(","):
-                key, value = stmt.split(":")
+                key, value = stmt.split(":", 1)
                 if key == "checksum":
                     gem_info["checksum"] = value
                 elif key == "ruby":
