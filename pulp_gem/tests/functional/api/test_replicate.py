@@ -55,7 +55,10 @@ def test_replication(
         pulpcore_bindings.UpstreamPulpsApi, upstream_pulp_body, pulp_domain=replica_domain.name
     )
     # Run the replicate task and assert that all tasks successfully complete.
-    response = pulpcore_bindings.UpstreamPulpsApi.replicate(upstream_pulp.pulp_href)
+    response = pulpcore_bindings.UpstreamPulpsApi.replicate(
+        upstream_pulp.pulp_href,
+        upstream_pulp_replicate=pulpcore_bindings.module.UpstreamPulpReplicate(),
+    )
     monitor_task_group(response.task_group)
 
     for api_client in (
