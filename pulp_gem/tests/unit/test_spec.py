@@ -27,7 +27,7 @@ def test_version_includes():
 def test_read_info_colon_in_value(tmp_path):
     info_file = tmp_path / "info"
     info_file.write_text(
-        "---\n7.0.1 activesupport:= 7.0.1|checksum:abc123,ruby:>= 2.7.0,rubygems:>= 1.8.11\n"
+        "---\n7.0.1 activesupport:= 7.0.1|checksum:abc123,ruby:>= 2.7.0,rubygems:>= 1.8.11,created_at:2009-07-25T18:01:49Z\n"
     )
     versions_info = {"7.0.1": {"version": "7.0.1", "platform": "ruby", "prerelease": False}}
 
