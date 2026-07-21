@@ -53,8 +53,8 @@ class TestGemContentSerializer(TestCase):
         serializer = GemContentSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         # Verification
-        ANALYZE_GEM.called_once_with(self.artifact)
-        _ARTIFACT_FROM_DATA.called_once_with("---\n...")
+        ANALYZE_GEM.assert_called_once_with(self.artifact.file)
+        _ARTIFACT_FROM_DATA.assert_called_once_with("---\n...")
 
         # Test that the GemContentSerializer does accept duplicate data.
         serializer.save()
