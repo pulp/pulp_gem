@@ -1,1 +1,0 @@
-Fixed a bug where upload fails due to improperly determining deferred serialization.
