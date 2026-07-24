@@ -8,6 +8,35 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.8.0 (2026-07-23) {: #0.8.0 }
+
+#### Features {: #0.8.0-feature }
+
+- Add more Pulp Exceptions.
+- Added download ability to gem content.
+- Bump pulpcore upperbound to <3.115.
+
+#### Bugfixes {: #0.8.0-bugfix }
+
+- Bump up pulpcore lowerbounds to 3.105 to avoid exception errors.
+- Fixed a bug where upload fails due to improperly determining deferred serialization.
+
+#### Deprecations and Removals {: #0.8.0-removal }
+
+- This release drops support for Python<3.11.
+
+#### Misc {: #0.8.0-misc }
+
+- 
+
+---
+
+## 0.7.6 (2026-07-23) {: #0.7.6 }
+
+No significant changes.
+
+---
+
 ## 0.7.5 (2026-01-07) {: #0.7.5 }
 
 #### Features {: #0.7.5-feature }
