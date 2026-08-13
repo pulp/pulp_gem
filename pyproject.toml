@@ -93,6 +93,7 @@ filename = "./pyproject.toml"
 search = "version = \"{current_version}\""
 replace = "version = \"{new_version}\""
 
+
 [tool.towncrier]
 package = "pulp_gem"
 filename = "CHANGES.md"
