@@ -219,7 +219,7 @@ class GemPublicationViewSet(PublicationViewSet, RolesMixin):
         description="Trigger an asynchronous task to publish gem content",
         responses={202: AsyncOperationResponseSerializer},
     )
-    def create(self, request):
+    def create(self, request, **kwargs):
         """
         Publishes a repository.
 
@@ -339,7 +339,7 @@ class GemRepositoryViewSet(RepositoryViewSet, ModifyRepositoryActionMixin, Roles
         responses={202: AsyncOperationResponseSerializer},
     )
     @action(detail=True, methods=["post"], serializer_class=RepositorySyncURLSerializer)
-    def sync(self, request, pk):
+    def sync(self, request, pk, **kwargs):
         """
         Dispatches a sync task.
         """

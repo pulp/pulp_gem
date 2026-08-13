@@ -67,6 +67,7 @@ pulp_settings_gcp:
       BACKEND: "django.contrib.staticfiles.storage.StaticFilesStorage"
   domain_enabled: true
 pulp_settings_s3:
+  ENABLE_API_V4: true
   MEDIA_ROOT: ""
   STORAGES:
     default:
