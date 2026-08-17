@@ -32,9 +32,8 @@ then
 fi
 fi
 
-# Check out the pulp-cli-gem branch matching the installed version.
-PULP_CLI_VERSION="$(uv pip freeze | sed -n -e 's/pulp-cli-gem==//p')"
-git clone --depth 1 --branch "$PULP_CLI_VERSION" https://github.com/pulp/pulp-cli-gem.git ../pulp-cli-gem
+# Temporarily use PR branch for debugging
+git clone --depth 1 --branch "fix_tests" https://github.com/jobselko/pulp-cli-gem.git ../pulp-cli-gem
 
 PULP_API_ROOT="$(yq -r '.pulp_scenario_settings.api_root // .pulp_settings.api_root // "/pulp/"' < .ci/ansible/vars/main.yaml)"
 
