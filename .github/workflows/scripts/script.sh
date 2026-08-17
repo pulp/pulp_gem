@@ -145,13 +145,7 @@ fi
 # some pulp-cli tests use the api root envvar
 export PULP_API_ROOT="$(EDITOR=cat pulp config edit 2>/dev/null | awk -F'"' '/api_root/{print $2; exit}')"
 pushd ../pulp-cli-gem
-if [[ -f "test_requirements.txt" ]]
-then
-  uv pip install -r test_requirements.txt
-  pytest -v tests -m "pulp_gem"
-else
-  PULP_CA_BUNDLE="/usr/local/share/ca-certificates/pulp_webserver.crt" make livetest PYTEST_MARK="live and (pulp_gem)"
-fi
+PULP_CA_BUNDLE="/usr/local/share/ca-certificates/pulp_webserver.crt" make paralleltest PYTEST_MARK="live and (pulp_gem)"
 popd
 
 if [ -f "$POST_SCRIPT" ]; then
