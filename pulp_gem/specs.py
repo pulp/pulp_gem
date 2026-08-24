@@ -157,13 +157,19 @@ async def read_info(relative_path, versions_info):
                     (item.split(":", maxsplit=1) for item in dependencies.split(","))
                 )
             for stmt in back.split(","):
-                key, value = stmt.split(":")
+                # According to the specification, there must be no ":" in the value.
+                # But reality tells us a different story.
+                key, value = stmt.split(":", maxsplit=1)
                 if key == "checksum":
                     gem_info["checksum"] = value
                 elif key == "ruby":
                     gem_info["required_ruby_version"] = value
                 elif key == "rubygems":
                     gem_info["required_rubygems_version"] = value
+                elif key == "created_at":
+                    # TODO work out the logic required here.
+                    # Currently we ignore this value and never serve anything like it.
+                    pass
                 else:
                     raise InvalidRequirementError(stmt=stmt)
             yield gem_info
