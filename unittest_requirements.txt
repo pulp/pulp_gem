@@ -1,3 +1,4 @@
 mock
+pytest-asyncio
 pytest-django
 pytest<8
