@@ -24,7 +24,7 @@ classifiers=[
 requires-python = ">=3.11"
 dependencies = [
   "pulpcore>=3.105.0,<3.130",
-  "pulp_glue_gem>=0.6.0,<0.7",
+  "pulp_glue_gem>=0.6.0,<0.9",
   "rubymarshal>=1.2.7,<1.3",
 ]
 
