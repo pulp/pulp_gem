@@ -8,6 +8,15 @@
 
 [//]: # (towncrier release notes start)
 
+## 0.8.1 (2026-11-04) {: #0.8.1 }
+
+#### Bugfixes {: #0.8.1-bugfix }
+
+- Improve resiliance parsing the rubygem compact index.
+  [#446](https://github.com/pulp/pulp_gem/issues/446)
+
+---
+
 ## 0.8.0 (2026-07-23) {: #0.8.0 }
 
 #### Features {: #0.8.0-feature }
